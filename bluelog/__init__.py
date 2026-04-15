@@ -42,7 +42,7 @@ from bluelog.blueprints.blog import blog_bp
 from bluelog.extensions import bootstrap, db, login_manager, csrf, mail, moment, toolbar, migrate
 from bluelog.models import Admin, Post, Category, Comment, Link
 from bluelog.settings import config
-from bluelog.utils import render_markdown
+from bluelog.utils import render_markdown, markdown_to_plain_text
 
 
 def create_app(config_name=None):
@@ -140,6 +140,10 @@ def register_template_filters(app):
     @app.template_filter()
     def markdown(value):
         return render_markdown(value)
+
+    @app.template_filter()
+    def markdown_plain(value):
+        return markdown_to_plain_text(value)
 
 
 def register_errors(app):

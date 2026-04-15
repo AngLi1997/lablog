@@ -22,6 +22,21 @@ IMAGE_RE = re.compile(r'!\[([^\]]*)\]\(([^)]+)\)')
 LINK_RE = re.compile(r'\[([^\]]+)\]\(([^)]+)\)')
 BOLD_RE = re.compile(r'\*\*(.+?)\*\*')
 ITALIC_RE = re.compile(r'(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)')
+HEADING_RE = re.compile(r'^#{1,6}\s+', re.MULTILINE)
+LIST_RE = re.compile(r'^\s*[-*+]\s+', re.MULTILINE)
+QUOTE_RE = re.compile(r'^\s*>\s?', re.MULTILINE)
+FENCE_RE = re.compile(r'^```[\w+-]*\n|\n```$', re.MULTILINE)
+PYTHON_KEYWORDS = re.compile(
+    r'\b(and|as|assert|async|await|break|class|continue|def|elif|else|except|False|for|from|if|import|in|is|'
+    r'lambda|None|nonlocal|not|or|pass|raise|return|True|try|while|with|yield)\b'
+)
+JS_KEYWORDS = re.compile(
+    r'\b(break|case|catch|class|const|continue|default|delete|else|export|extends|false|finally|for|function|'
+    r'if|import|in|instanceof|let|new|null|return|super|switch|this|throw|true|try|typeof|var|while)\b'
+)
+NUMBER_RE = re.compile(r'\b\d+(\.\d+)?\b')
+STRING_RE = re.compile(r'([\'"])(?:(?=(\\?))\2.)*?\1')
+COMMENT_RE = re.compile(r'(#.*$|//.*$)', re.MULTILINE)
 
 
 def _render_inline_markdown(text):
@@ -34,6 +49,24 @@ def _render_inline_markdown(text):
     return text
 
 
+def _highlight_code(code, language):
+    escaped = escape(code)
+
+    def replace_pattern(text, pattern, class_name):
+        return pattern.sub(lambda match: '<span class="%s">%s</span>' % (class_name, match.group(0)), text)
+
+    highlighted = replace_pattern(escaped, STRING_RE, 'md-token-string')
+    highlighted = replace_pattern(highlighted, COMMENT_RE, 'md-token-comment')
+    highlighted = replace_pattern(highlighted, NUMBER_RE, 'md-token-number')
+
+    if language in ('python', 'py'):
+        highlighted = replace_pattern(highlighted, PYTHON_KEYWORDS, 'md-token-keyword')
+    elif language in ('javascript', 'js', 'typescript', 'ts', 'json'):
+        highlighted = replace_pattern(highlighted, JS_KEYWORDS, 'md-token-keyword')
+
+    return highlighted
+
+
 def render_markdown(text):
     if not text:
         return Markup('')
@@ -42,10 +75,16 @@ def render_markdown(text):
 
     def replace_code_block(match):
         language = escape(match.group(1))
-        code = escape(match.group(2).strip('\n'))
+        raw_code = match.group(2).strip('\n')
         placeholder = '@@CODE_BLOCK_%d@@' % len(placeholders)
         class_attr = ' class="language-%s"' % language if language else ''
-        placeholders[placeholder] = '<pre><code%s>%s</code></pre>' % (class_attr, code)
+        highlighted = _highlight_code(raw_code, language)
+        placeholders[placeholder] = (
+            '<div class="markdown-code-block">'
+            '<button type="button" class="btn btn-sm btn-light markdown-copy-btn">复制</button>'
+            '<pre><code%s>%s</code></pre>'
+            '</div>'
+        ) % (class_attr, highlighted)
         return placeholder
 
     normalized = text.replace('\r\n', '\n').strip()
@@ -123,6 +162,27 @@ def render_markdown(text):
     for placeholder, code_html in placeholders.items():
         html = html.replace(placeholder, code_html)
     return Markup(html)
+
+
+def markdown_to_plain_text(text):
+    if not text:
+        return ''
+
+    plain = text.replace('\r\n', '\n')
+    plain = CODE_BLOCK_RE.sub(lambda match: '\n%s\n' % match.group(2).strip('\n'), plain)
+    plain = IMAGE_RE.sub(r'\1', plain)
+    plain = LINK_RE.sub(r'\1', plain)
+    plain = INLINE_CODE_RE.sub(r'\1', plain)
+    plain = BOLD_RE.sub(r'\1', plain)
+    plain = ITALIC_RE.sub(r'\1', plain)
+    plain = HEADING_RE.sub('', plain)
+    plain = LIST_RE.sub('', plain)
+    plain = QUOTE_RE.sub('', plain)
+    plain = FENCE_RE.sub('', plain)
+    plain = plain.replace('---', ' ')
+    plain = re.sub(r'\n+', ' ', plain)
+    plain = re.sub(r'\s+', ' ', plain)
+    return plain.strip()
 
 
 def is_safe_url(target):

@@ -1,4 +1,176 @@
 (function () {
+    function escapeHtml(text) {
+        return text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function renderInlineMarkdown(text) {
+        var html = escapeHtml(text);
+        html = html.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+        html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img alt="$1" src="$2">');
+        html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+        html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        html = html.replace(/(^|[^*])\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '$1<em>$2</em>');
+        return html;
+    }
+
+    function highlightCode(code, language) {
+        var html = escapeHtml(code);
+        html = html.replace(/([\'"])(?:(?=(\\?))\2.)*?\1/g, '<span class="md-token-string">$&</span>');
+        html = html.replace(/(#.*$|\/\/.*$)/gm, '<span class="md-token-comment">$1</span>');
+        html = html.replace(/\b\d+(\.\d+)?\b/g, '<span class="md-token-number">$&</span>');
+        if (['python', 'py'].indexOf(language) >= 0) {
+            html = html.replace(
+                /\b(and|as|assert|async|await|break|class|continue|def|elif|else|except|False|for|from|if|import|in|is|lambda|None|nonlocal|not|or|pass|raise|return|True|try|while|with|yield)\b/g,
+                '<span class="md-token-keyword">$1</span>'
+            );
+        } else if (['javascript', 'js', 'typescript', 'ts', 'json'].indexOf(language) >= 0) {
+            html = html.replace(
+                /\b(break|case|catch|class|const|continue|default|delete|else|export|extends|false|finally|for|function|if|import|in|instanceof|let|new|null|return|super|switch|this|throw|true|try|typeof|var|while)\b/g,
+                '<span class="md-token-keyword">$1</span>'
+            );
+        }
+        return html;
+    }
+
+    function renderMarkdown(text) {
+        var placeholders = [];
+
+        text = text.replace(/\r\n/g, '\n').trim();
+        text = text.replace(/```([\w+-]*)\n([\s\S]*?)```/g, function (_, language, code) {
+            var placeholder = '@@CODE_BLOCK_' + placeholders.length + '@@';
+            var classAttr = language ? ' class="language-' + language + '"' : '';
+            placeholders.push('<pre><code' + classAttr + '>' + highlightCode(code.replace(/^\n+|\n+$/g, ''), language) + '</code></pre>');
+            return placeholder;
+        });
+
+        var blocks = [];
+        var paragraphLines = [];
+        var listLines = [];
+
+        function flushParagraph() {
+            if (paragraphLines.length) {
+                blocks.push('<p>' + renderInlineMarkdown(paragraphLines.join(' ')) + '</p>');
+                paragraphLines = [];
+            }
+        }
+
+        function flushList() {
+            if (listLines.length) {
+                blocks.push('<ul>' + listLines.map(function (item) {
+                    return '<li>' + renderInlineMarkdown(item) + '</li>';
+                }).join('') + '</ul>');
+                listLines = [];
+            }
+        }
+
+        text.split('\n').forEach(function (rawLine) {
+            var stripped = rawLine.trim();
+            var headingMatch;
+            var quoteMatch;
+            var listMatch;
+
+            if (!stripped) {
+                flushParagraph();
+                flushList();
+                return;
+            }
+
+            if (/^@@CODE_BLOCK_\d+@@$/.test(stripped)) {
+                flushParagraph();
+                flushList();
+                blocks.push(stripped);
+                return;
+            }
+
+            headingMatch = stripped.match(/^(#{1,6})\s+(.*)$/);
+            if (headingMatch) {
+                flushParagraph();
+                flushList();
+                blocks.push('<h' + headingMatch[1].length + '>' + renderInlineMarkdown(headingMatch[2]) + '</h' + headingMatch[1].length + '>');
+                return;
+            }
+
+            quoteMatch = stripped.match(/^>\s?(.*)$/);
+            if (quoteMatch) {
+                flushParagraph();
+                flushList();
+                blocks.push('<blockquote><p>' + renderInlineMarkdown(quoteMatch[1]) + '</p></blockquote>');
+                return;
+            }
+
+            if (stripped === '---') {
+                flushParagraph();
+                flushList();
+                blocks.push('<hr>');
+                return;
+            }
+
+            listMatch = stripped.match(/^[-*]\s+(.*)$/);
+            if (listMatch) {
+                flushParagraph();
+                listLines.push(listMatch[1]);
+                return;
+            }
+
+            flushList();
+            paragraphLines.push(stripped);
+        });
+
+        flushParagraph();
+        flushList();
+
+        return blocks.join('\n').replace(/@@CODE_BLOCK_(\d+)@@/g, function (_, index) {
+            return placeholders[Number(index)];
+        });
+    }
+
+    function enhanceCodeBlocks(container) {
+        container.querySelectorAll('pre').forEach(function (pre) {
+            var wrapper;
+            var copyButton;
+
+            if (pre.parentNode && pre.parentNode.classList.contains('markdown-code-block')) {
+                return;
+            }
+
+            wrapper = document.createElement('div');
+            wrapper.className = 'markdown-code-block';
+
+            copyButton = document.createElement('button');
+            copyButton.type = 'button';
+            copyButton.className = 'btn btn-sm btn-light markdown-copy-btn';
+            copyButton.textContent = '复制';
+
+            pre.parentNode.insertBefore(wrapper, pre);
+            wrapper.appendChild(copyButton);
+            wrapper.appendChild(pre);
+        });
+    }
+
+    function copyCodeFromButton(button) {
+        var wrapper = button.closest('.markdown-code-block');
+        var code = wrapper ? wrapper.querySelector('code') : null;
+        var text = code ? code.textContent : '';
+
+        if (!text) {
+            return;
+        }
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function () {
+                button.textContent = '已复制';
+                window.setTimeout(function () {
+                    button.textContent = '复制';
+                }, 1500);
+            });
+        }
+    }
+
     function wrapSelection(textarea, prefix, suffix, placeholder) {
         var start = textarea.selectionStart;
         var end = textarea.selectionEnd;
@@ -50,6 +222,13 @@
         var toolbar = document.createElement('div');
         toolbar.className = 'markdown-toolbar';
 
+        var previewButton = document.createElement('button');
+        previewButton.type = 'button';
+        previewButton.className = 'btn btn-sm btn-outline-primary markdown-preview-toggle';
+        previewButton.textContent = '预览';
+        previewButton.dataset.mode = 'edit';
+        toolbar.appendChild(previewButton);
+
         [
             ['bold', 'Bold'],
             ['italic', 'Italic'],
@@ -68,19 +247,46 @@
             toolbar.appendChild(button);
         });
 
+        var preview = document.createElement('div');
+        preview.className = 'markdown-preview markdown-body';
+        preview.hidden = true;
+
         var help = document.createElement('small');
         help.className = 'form-text text-muted markdown-help';
-        help.textContent = '使用 Markdown 编写内容，旧 HTML 内容也会兼容显示。';
+        help.textContent = '支持 Markdown 编辑和预览，代码块会在预览中高亮。';
 
         textarea.classList.add('markdown-textarea');
         textarea.parentNode.insertBefore(container, textarea);
         container.appendChild(toolbar);
         container.appendChild(textarea);
+        container.appendChild(preview);
         container.appendChild(help);
 
         toolbar.addEventListener('click', function (event) {
-            var button = event.target.closest('[data-action]');
+            var button = event.target.closest('button');
             if (!button) {
+                return;
+            }
+            if (button === previewButton) {
+                if (previewButton.dataset.mode === 'edit') {
+                    preview.innerHTML = renderMarkdown(textarea.value);
+                    enhanceCodeBlocks(preview);
+                    preview.hidden = false;
+                    textarea.hidden = true;
+                    textarea.readOnly = true;
+                    previewButton.dataset.mode = 'preview';
+                    previewButton.textContent = '返回编辑';
+                } else {
+                    preview.hidden = true;
+                    textarea.hidden = false;
+                    textarea.readOnly = false;
+                    previewButton.dataset.mode = 'edit';
+                    previewButton.textContent = '预览';
+                    textarea.focus();
+                }
+                return;
+            }
+            if (!button.dataset.action) {
                 return;
             }
             handleAction(textarea, button.dataset.action);
@@ -89,5 +295,13 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('textarea[data-markdown-editor="true"]').forEach(buildToolbar);
+        document.querySelectorAll('.markdown-body').forEach(enhanceCodeBlocks);
+        document.addEventListener('click', function (event) {
+            var button = event.target.closest('.markdown-copy-btn');
+            if (!button) {
+                return;
+            }
+            copyCodeFromButton(button);
+        });
     });
 })();
