@@ -54,9 +54,7 @@ def render_markdown(text):
         class_attr = ' class="language-%s"' % language if language else ''
         placeholders[placeholder] = (
             '<div class="markdown-code-block">'
-            '<button type="button" class="markdown-copy-btn" aria-label="复制代码" title="复制代码">'
-            '<span class="markdown-copy-icon" aria-hidden="true"></span>'
-            '</button>'
+            '<button type="button" class="markdown-copy-btn" aria-label="复制代码" title="复制代码">复制</button>'
             '<pre><code%s>%s</code></pre>'
             '</div>'
         ) % (class_attr, escape(raw_code))

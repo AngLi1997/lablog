@@ -20,7 +20,6 @@ $(function () {
         var wrapper = button.closest('.markdown-code-block');
         var code = wrapper ? wrapper.querySelector('code') : null;
         var text = code ? code.textContent : '';
-        var icon = button.querySelector('.markdown-copy-icon');
 
         if (!text) {
             return;
@@ -28,15 +27,9 @@ $(function () {
 
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(text).then(function () {
-                button.classList.add('is-copied');
-                if (icon) {
-                    icon.setAttribute('data-copied', 'true');
-                }
+                button.textContent = '已复制';
                 window.setTimeout(function () {
-                    button.classList.remove('is-copied');
-                    if (icon) {
-                        icon.removeAttribute('data-copied');
-                    }
+                    button.textContent = '复制';
                 }, 1500);
             });
         }

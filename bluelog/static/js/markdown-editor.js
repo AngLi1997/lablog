@@ -125,7 +125,7 @@
                 copyButton.className = 'markdown-copy-btn';
                 copyButton.setAttribute('aria-label', '复制代码');
                 copyButton.setAttribute('title', '复制代码');
-                copyButton.innerHTML = '<span class="markdown-copy-icon" aria-hidden="true"></span>';
+                copyButton.textContent = '复制';
 
                 pre.parentNode.insertBefore(wrapper, pre);
                 wrapper.appendChild(copyButton);
@@ -143,7 +143,6 @@
         var wrapper = button.closest('.markdown-code-block');
         var code = wrapper ? wrapper.querySelector('code') : null;
         var text = code ? code.textContent : '';
-        var icon = button.querySelector('.markdown-copy-icon');
 
         if (!text) {
             return;
@@ -151,15 +150,9 @@
 
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(text).then(function () {
-                button.classList.add('is-copied');
-                if (icon) {
-                    icon.setAttribute('data-copied', 'true');
-                }
+                button.textContent = '已复制';
                 window.setTimeout(function () {
-                    button.classList.remove('is-copied');
-                    if (icon) {
-                        icon.removeAttribute('data-copied');
-                    }
+                    button.textContent = '复制';
                 }, 1500);
             });
         }
