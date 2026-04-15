@@ -121,24 +121,6 @@ footer {
     padding-left: 1.5rem;
 }
 
-.markdown-body .md-token-keyword {
-    color: #ff7b72;
-    font-weight: 600;
-}
-
-.markdown-body .md-token-string {
-    color: #a5d6ff;
-}
-
-.markdown-body .md-token-number {
-    color: #79c0ff;
-}
-
-.markdown-body .md-token-comment {
-    color: #8b949e;
-    font-style: italic;
-}
-
 .markdown-code-block {
     position: relative;
     margin: 1rem 0;
@@ -183,12 +165,4 @@ footer {
 
 .markdown-code-block pre::-webkit-scrollbar-thumb:hover {
     background: #484f58;
-}
-
-.markdown-body .md-token-constant {
-    color: #ffa657;
-}
-
-.markdown-body .md-token-attr {
-    color: #79c0ff;
 }

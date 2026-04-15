@@ -18,33 +18,6 @@
         return html;
     }
 
-    function highlightCode(code, language) {
-        var html = escapeHtml(code);
-        var normalizedLanguage = (language || '').toLowerCase();
-        html = html.replace(/([\'"])(?:(?=(\\?))\2.)*?\1/g, '<span class="md-token-string">$&</span>');
-        html = html.replace(/(#.*$|\/\/.*$)/gm, '<span class="md-token-comment">$1</span>');
-        html = html.replace(/\b\d+(\.\d+)?\b/g, '<span class="md-token-number">$&</span>');
-        html = html.replace(/\b(true|false|null|undefined|None)\b/g, '<span class="md-token-constant">$1</span>');
-        if (['python', 'py', 'bash', 'sh', 'shell', 'zsh', 'yaml', 'yml', 'sql'].indexOf(normalizedLanguage) >= 0) {
-            html = html.replace(
-                /\b(and|as|assert|async|await|break|case|class|continue|def|elif|else|esac|except|False|fi|for|from|if|import|in|is|lambda|None|nonlocal|not|or|pass|raise|return|select|then|True|try|while|with|yield|where|from|insert|update|delete|join|into|values|set|group|order|by|limit)\b/gi,
-                '<span class="md-token-keyword">$1</span>'
-            );
-        } else if (['javascript', 'js', 'typescript', 'ts', 'json', 'java', 'c', 'cpp', 'cxx', 'go', 'rust', 'php'].indexOf(normalizedLanguage) >= 0) {
-            html = html.replace(
-                /\b(break|case|catch|class|const|continue|default|delete|else|enum|export|extends|false|finally|fn|for|function|if|implements|import|in|instanceof|interface|let|match|new|null|package|private|protected|public|return|static|struct|super|switch|this|throw|trait|true|try|type|typeof|use|var|void|while)\b/g,
-                '<span class="md-token-keyword">$1</span>'
-            );
-        } else if (['html', 'xml'].indexOf(normalizedLanguage) >= 0) {
-            html = html.replace(/(&lt;\/?)([\w:-]+)/g, '$1<span class="md-token-keyword">$2</span>');
-            html = html.replace(/([\w:-]+)=/g, '<span class="md-token-attr">$1</span>=');
-        } else if (['css', 'scss', 'less'].indexOf(normalizedLanguage) >= 0) {
-            html = html.replace(/([.#]?[\w-]+)(\s*\{)/g, '<span class="md-token-keyword">$1</span>$2');
-            html = html.replace(/([\w-]+)(\s*:)/g, '<span class="md-token-attr">$1</span>$2');
-        }
-        return html;
-    }
-
     function renderMarkdown(text) {
         var placeholders = [];
 
@@ -52,7 +25,7 @@
         text = text.replace(/```([\w+-]*)\n([\s\S]*?)```/g, function (_, language, code) {
             var placeholder = '@@CODE_BLOCK_' + placeholders.length + '@@';
             var classAttr = language ? ' class="language-' + language + '"' : '';
-            placeholders.push('<pre><code' + classAttr + '>' + highlightCode(code.replace(/^\n+|\n+$/g, ''), language) + '</code></pre>');
+            placeholders.push('<pre><code' + classAttr + '>' + escapeHtml(code.replace(/^\n+|\n+$/g, '')) + '</code></pre>');
             return placeholder;
         });
 
@@ -141,22 +114,26 @@
         container.querySelectorAll('pre').forEach(function (pre) {
             var wrapper;
             var copyButton;
+            var code;
 
-            if (pre.parentNode && pre.parentNode.classList.contains('markdown-code-block')) {
-                return;
+            if (!(pre.parentNode && pre.parentNode.classList.contains('markdown-code-block'))) {
+                wrapper = document.createElement('div');
+                wrapper.className = 'markdown-code-block';
+
+                copyButton = document.createElement('button');
+                copyButton.type = 'button';
+                copyButton.className = 'btn btn-sm btn-light markdown-copy-btn';
+                copyButton.textContent = '复制';
+
+                pre.parentNode.insertBefore(wrapper, pre);
+                wrapper.appendChild(copyButton);
+                wrapper.appendChild(pre);
             }
 
-            wrapper = document.createElement('div');
-            wrapper.className = 'markdown-code-block';
-
-            copyButton = document.createElement('button');
-            copyButton.type = 'button';
-            copyButton.className = 'btn btn-sm btn-light markdown-copy-btn';
-            copyButton.textContent = '复制';
-
-            pre.parentNode.insertBefore(wrapper, pre);
-            wrapper.appendChild(copyButton);
-            wrapper.appendChild(pre);
+            code = pre.querySelector('code');
+            if (code && window.hljs) {
+                window.hljs.highlightElement(code);
+            }
         });
     }
 
@@ -281,7 +258,6 @@
 
         var help = document.createElement('small');
         help.className = 'form-text text-muted markdown-help';
-        help.textContent = '支持 Markdown 编辑和预览，代码块会在预览中高亮。';
 
         textarea.classList.add('markdown-textarea');
         handleTabKey(textarea);

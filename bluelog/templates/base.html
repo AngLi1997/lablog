@@ -11,6 +11,9 @@
               href="{{ url_for('static', filename='css/%s.min.css' % request.cookies.get('theme', 'perfect_blue')) }}"
               type="text/css">
         <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" type="text/css">
+        <link rel="stylesheet"
+              href="{{ url_for('static', filename='css/highlight-github-dark.min.css') }}"
+              type="text/css">
     {% endblock head %}
 </head>
 <body>
@@ -103,6 +106,7 @@
     <script type="text/javascript" src="{{ url_for('static', filename='js/jquery-3.2.1.slim.min.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='js/popper.min.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='js/highlight.min.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='js/script.js') }}"></script>
     {{ moment.include_moment(local_js=url_for('static', filename='js/moment-with-locales.min.js')) }}
 {% endblock %}
