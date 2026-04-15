@@ -1,0 +1,1791 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Bluelog OpenAPI",
+    "version": "1.0.0",
+    "description": "Bluelog 项目现有 HTTP 接口整理。该文档基于代码实现生成，适合作为 AI 自动化调用参考。注意：本项目绝大多数接口返回 HTML 页面或 302 重定向，并不是典型 JSON API。涉及 POST 的表单接口默认启用 CSRF 校验；除 testing 配置外，自动化调用通常需要先请求页面获取 session cookie 与 csrf_token，再提交表单。"
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:5000",
+      "description": "本地 Flask 开发环境"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Public",
+      "description": "公开访问接口"
+    },
+    {
+      "name": "Auth",
+      "description": "登录与退出"
+    },
+    {
+      "name": "Admin",
+      "description": "需要登录的后台管理接口"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "sessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "session",
+        "description": "Flask-Login 登录成功后写入的会话 Cookie。后台接口需要携带。"
+      },
+      "csrfTokenField": {
+        "type": "apiKey",
+        "in": "query",
+        "name": "csrf_token",
+        "description": "描述用安全方案。实际代码通过 Flask-WTF 在 HTML 表单字段中提交 csrf_token，不是 query 参数。自动化调用时应先 GET 页面，再从表单中提取该字段。"
+      }
+    },
+    "parameters": {
+      "PageParam": {
+        "name": "page",
+        "in": "query",
+        "description": "分页页码，从 1 开始。",
+        "schema": {
+          "type": "integer",
+          "default": 1,
+          "minimum": 1
+        }
+      },
+      "PostId": {
+        "name": "post_id",
+        "in": "path",
+        "required": true,
+        "description": "文章 ID。",
+        "schema": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "CategoryId": {
+        "name": "category_id",
+        "in": "path",
+        "required": true,
+        "description": "分类 ID。",
+        "schema": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "CommentId": {
+        "name": "comment_id",
+        "in": "path",
+        "required": true,
+        "description": "评论 ID。",
+        "schema": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "LinkId": {
+        "name": "link_id",
+        "in": "path",
+        "required": true,
+        "description": "友情链接 ID。",
+        "schema": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "schemas": {
+      "HtmlPage": {
+        "type": "string",
+        "description": "服务器端渲染后的 HTML 文本。"
+      },
+      "RedirectResponse": {
+        "type": "object",
+        "description": "说明性结构，实际返回为 HTTP 302 响应和 Location 头。",
+        "properties": {
+          "location": {
+            "type": "string",
+            "description": "浏览器应跳转到的目标 URL。"
+          },
+          "flash_message": {
+            "type": "string",
+            "description": "服务端可能写入 session 的一次性提示消息，页面下次渲染时显示。"
+          }
+        }
+      },
+      "LoginForm": {
+        "type": "object",
+        "required": [
+          "username",
+          "password",
+          "csrf_token"
+        ],
+        "properties": {
+          "username": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20,
+            "description": "管理员登录用户名。"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "管理员登录密码。"
+          },
+          "remember": {
+            "type": "boolean",
+            "description": "是否记住登录状态。HTML 表单通常以 on/空值传递。"
+          },
+          "csrf_token": {
+            "type": "string",
+            "description": "Flask-WTF 生成的 CSRF token。"
+          }
+        }
+      },
+      "CommentForm": {
+        "type": "object",
+        "required": [
+          "author",
+          "email",
+          "body",
+          "csrf_token"
+        ],
+        "properties": {
+          "author": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 30,
+            "description": "评论作者名。匿名评论时必填；管理员评论会由系统自动填充。"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254,
+            "description": "评论邮箱。匿名评论时必填。"
+          },
+          "site": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 255,
+            "description": "评论作者站点，可为空。"
+          },
+          "body": {
+            "type": "string",
+            "description": "评论正文。"
+          },
+          "csrf_token": {
+            "type": "string",
+            "description": "Flask-WTF 生成的 CSRF token。"
+          }
+        }
+      },
+      "AdminCommentForm": {
+        "type": "object",
+        "required": [
+          "author",
+          "email",
+          "site",
+          "body",
+          "csrf_token"
+        ],
+        "properties": {
+          "author": {
+            "type": "string",
+            "description": "隐藏字段，管理员名称。页面已预填。"
+          },
+          "email": {
+            "type": "string",
+            "description": "隐藏字段，管理员邮箱。页面已预填。"
+          },
+          "site": {
+            "type": "string",
+            "description": "隐藏字段，管理员站点。代码中默认填首页 URL。"
+          },
+          "body": {
+            "type": "string",
+            "description": "评论正文。"
+          },
+          "csrf_token": {
+            "type": "string",
+            "description": "Flask-WTF 生成的 CSRF token。"
+          }
+        }
+      },
+      "SettingForm": {
+        "type": "object",
+        "required": [
+          "name",
+          "blog_title",
+          "blog_sub_title",
+          "about",
+          "csrf_token"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 30,
+            "description": "博主显示名。"
+          },
+          "blog_title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60,
+            "description": "博客标题。"
+          },
+          "blog_sub_title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "博客副标题。"
+          },
+          "about": {
+            "type": "string",
+            "description": "关于页面 Markdown 内容。"
+          },
+          "csrf_token": {
+            "type": "string",
+            "description": "Flask-WTF 生成的 CSRF token。"
+          }
+        }
+      },
+      "PostForm": {
+        "type": "object",
+        "required": [
+          "title",
+          "category",
+          "body",
+          "csrf_token"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60,
+            "description": "文章标题。"
+          },
+          "category": {
+            "type": "integer",
+            "description": "分类 ID。必须是现有分类。"
+          },
+          "body": {
+            "type": "string",
+            "description": "文章正文，支持 Markdown。"
+          },
+          "csrf_token": {
+            "type": "string",
+            "description": "Flask-WTF 生成的 CSRF token。"
+          }
+        }
+      },
+      "CategoryForm": {
+        "type": "object",
+        "required": [
+          "name",
+          "csrf_token"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 30,
+            "description": "分类名称。必须唯一。"
+          },
+          "csrf_token": {
+            "type": "string",
+            "description": "Flask-WTF 生成的 CSRF token。"
+          }
+        }
+      },
+      "LinkForm": {
+        "type": "object",
+        "required": [
+          "name",
+          "url",
+          "csrf_token"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 30,
+            "description": "友情链接名称。"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 255,
+            "description": "友情链接 URL。"
+          },
+          "csrf_token": {
+            "type": "string",
+            "description": "Flask-WTF 生成的 CSRF token。"
+          }
+        }
+      },
+      "UploadImageSuccess": {
+        "type": "object",
+        "required": [
+          "url",
+          "filename"
+        ],
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "上传后的图片访问地址，相对路径，例如 /uploads/xxx.png。"
+          },
+          "filename": {
+            "type": "string",
+            "description": "服务端生成的最终文件名，UUID + 原扩展名。"
+          }
+        }
+      },
+      "ErrorMessage": {
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "错误原因说明。"
+          }
+        }
+      }
+    },
+    "responses": {
+      "Html200": {
+        "description": "返回 HTML 页面。",
+        "content": {
+          "text/html": {
+            "schema": {
+              "$ref": "#/components/schemas/HtmlPage"
+            },
+            "examples": {
+              "page": {
+                "value": "<!doctype html><html><head><title>Bluelog</title></head><body>...</body></html>"
+              }
+            }
+          }
+        }
+      },
+      "Redirect302": {
+        "description": "返回 302 重定向，通常伴随 flash 提示。",
+        "headers": {
+          "Location": {
+            "description": "跳转目标。",
+            "schema": {
+              "type": "string"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/RedirectResponse"
+            },
+            "examples": {
+              "redirect": {
+                "value": {
+                  "location": "/",
+                  "flash_message": "Operation succeeded."
+                }
+              }
+            }
+          }
+        }
+      },
+      "BadRequestHtml400": {
+        "description": "请求不合法，返回 400 错误页。常见原因：CSRF 校验失败、表单校验失败后仍强制调用接口。",
+        "content": {
+          "text/html": {
+            "schema": {
+              "$ref": "#/components/schemas/HtmlPage"
+            },
+            "examples": {
+              "badRequest": {
+                "value": "<!doctype html><html><body><h1>400 Bad Request</h1>...</body></html>"
+              }
+            }
+          }
+        }
+      },
+      "NotFoundHtml404": {
+        "description": "资源不存在，返回 404 页面。",
+        "content": {
+          "text/html": {
+            "schema": {
+              "$ref": "#/components/schemas/HtmlPage"
+            }
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "首页文章列表",
+        "description": "展示文章分页列表。",
+        "operationId": "listPosts",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PageParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Html200"
+          }
+        },
+        "x-curl-example": "curl -i 'http://127.0.0.1:5000/?page=1'"
+      }
+    },
+    "/about": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "关于页面",
+        "description": "展示管理员在设置中维护的 about Markdown 内容。",
+        "operationId": "getAboutPage",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Html200"
+          }
+        },
+        "x-curl-example": "curl -i 'http://127.0.0.1:5000/about'"
+      }
+    },
+    "/category/{category_id}": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "分类文章列表",
+        "description": "按分类分页显示文章。",
+        "operationId": "listPostsByCategory",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CategoryId"
+          },
+          {
+            "$ref": "#/components/parameters/PageParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Html200"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundHtml404"
+          }
+        },
+        "x-curl-example": "curl -i 'http://127.0.0.1:5000/category/1?page=1'"
+      }
+    },
+    "/post/{post_id}": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "文章详情页",
+        "description": "显示文章详情和已审核评论列表。可带 reply 和 author 查询参数用于回复某条评论时回填页面状态。",
+        "operationId": "getPostDetail",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PostId"
+          },
+          {
+            "$ref": "#/components/parameters/PageParam"
+          },
+          {
+            "name": "reply",
+            "in": "query",
+            "description": "准备回复的评论 ID，仅用于页面提示与表单 action 拼接。",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "author",
+            "in": "query",
+            "description": "被回复评论作者名，仅用于页面显示。",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Html200"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundHtml404"
+          }
+        },
+        "x-curl-example": "curl -i 'http://127.0.0.1:5000/post/1?page=1'"
+      },
+      "post": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "提交文章评论",
+        "description": "给指定文章提交评论。未登录用户提交后默认 reviewed=false，需要管理员审核；已登录管理员提交后直接发布。若 URL 带 reply 查询参数，则表示回复某条评论。",
+        "operationId": "createComment",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PostId"
+          },
+          {
+            "name": "reply",
+            "in": "query",
+            "description": "被回复的评论 ID。存在时会建立回复关系并触发回复通知邮件。",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/CommentForm"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AdminCommentForm"
+                  }
+                ]
+              },
+              "examples": {
+                "guestComment": {
+                  "summary": "匿名评论",
+                  "value": {
+                    "author": "Alice",
+                    "email": "alice@example.com",
+                    "site": "https://example.com",
+                    "body": "写得很好。",
+                    "csrf_token": "<从 GET /post/{post_id} 页面提取>"
+                  }
+                },
+                "adminComment": {
+                  "summary": "管理员评论",
+                  "value": {
+                    "author": "Admin",
+                    "email": "admin@example.com",
+                    "site": "/",
+                    "body": "感谢反馈。",
+                    "csrf_token": "<从 GET /post/{post_id} 页面提取>"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "302": {
+            "$ref": "#/components/responses/Redirect302"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequestHtml400"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundHtml404"
+          }
+        },
+        "x-curl-example": "curl -i -X POST 'http://127.0.0.1:5000/post/1?reply=2' -H 'Content-Type: application/x-www-form-urlencoded' -b cookies.txt -c cookies.txt --data-urlencode 'author=Alice' --data-urlencode 'email=alice@example.com' --data-urlencode 'site=https://example.com' --data-urlencode 'body=写得很好' --data-urlencode 'csrf_token=<token>'"
+      }
+    },
+    "/reply/comment/{comment_id}": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "生成评论回复跳转",
+        "description": "根据评论 ID 跳转到对应文章详情页，并附加 reply 与 author 查询参数以及 #comment-form 锚点。如果目标文章已关闭评论，则跳回文章详情页。",
+        "operationId": "replyCommentRedirect",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CommentId"
+          }
+        ],
+        "responses": {
+          "302": {
+            "$ref": "#/components/responses/Redirect302"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundHtml404"
+          }
+        },
+        "x-curl-example": "curl -i 'http://127.0.0.1:5000/reply/comment/3'"
+      }
+    },
+    "/change-theme/{theme_name}": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "切换站点主题",
+        "description": "设置名为 theme 的 Cookie，然后重定向回来源页或首页。有效主题由配置项 BLUELOG_THEMES 限定，目前代码中为 perfect_blue 和 black_swan。",
+        "operationId": "changeTheme",
+        "parameters": [
+          {
+            "name": "theme_name",
+            "in": "path",
+            "required": true,
+            "description": "主题名称，可选值：perfect_blue、black_swan。",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "perfect_blue",
+                "black_swan"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "设置 Cookie 后跳转。",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Set-Cookie": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "包含 theme=<theme_name>。"
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundHtml404"
+          }
+        },
+        "x-curl-example": "curl -i 'http://127.0.0.1:5000/change-theme/perfect_blue'"
+      }
+    },
+    "/uploads/{filename}": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "访问上传图片文件",
+        "description": "从上传目录读取文件原样返回。通常用于访问后台上传的文章图片。",
+        "operationId": "getUploadedFile",
+        "parameters": [
+          {
+            "name": "filename",
+            "in": "path",
+            "required": true,
+            "description": "上传后生成的文件名。",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "返回图片二进制内容。",
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/gif": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/webp": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundHtml404"
+          }
+        },
+        "x-curl-example": "curl -i 'http://127.0.0.1:5000/uploads/example.png'"
+      }
+    },
+    "/auth/login": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "获取登录页",
+        "description": "返回登录 HTML 页面和表单中的 csrf_token。若当前已登录，则直接重定向到首页。",
+        "operationId": "getLoginPage",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Html200"
+          },
+          "302": {
+            "$ref": "#/components/responses/Redirect302"
+          }
+        },
+        "x-curl-example": "curl -i -c cookies.txt 'http://127.0.0.1:5000/auth/login'"
+      },
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "管理员登录",
+        "description": "校验用户名和密码，成功后写入 session cookie 并重定向到来源页或首页；失败时返回登录页并通过 flash 显示错误。",
+        "operationId": "login",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginForm"
+              },
+              "examples": {
+                "default": {
+                  "value": {
+                    "username": "admin",
+                    "password": "password",
+                    "remember": true,
+                    "csrf_token": "<从 GET /auth/login 页面提取>"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "302": {
+            "description": "登录成功后跳转，并设置 session Cookie。",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Set-Cookie": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "包含 session=...。"
+              }
+            }
+          },
+          "200": {
+            "$ref": "#/components/responses/Html200"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequestHtml400"
+          }
+        },
+        "x-curl-example": "curl -i -X POST 'http://127.0.0.1:5000/auth/login' -H 'Content-Type: application/x-www-form-urlencoded' -b cookies.txt -c cookies.txt --data-urlencode 'username=admin' --data-urlencode 'password=password' --data-urlencode 'remember=y' --data-urlencode 'csrf_token=<token>'"
+      }
+    },
+    "/auth/logout": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "退出登录",
+        "description": "清理当前登录态并重定向回来源页或首页。",
+        "operationId": "logout",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "302": {
+            "$ref": "#/components/responses/Redirect302"
+          }
+        },
+        "x-curl-example": "curl -i -b cookies.txt 'http://127.0.0.1:5000/auth/logout'"
+      }
+    },
+    "/admin/settings": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "获取站点设置页",
+        "description": "返回后台设置 HTML 页面，包含当前管理员资料与 csrf_token。",
+        "operationId": "getSettingsPage",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Html200"
+          },
+          "302": {
+            "$ref": "#/components/responses/Redirect302"
+          }
+        },
+        "x-curl-example": "curl -i -b cookies.txt -c cookies.txt 'http://127.0.0.1:5000/admin/settings'"
+      },
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "更新站点设置",
+        "description": "更新管理员名称、博客标题、副标题和 about 内容。成功后跳转首页。",
+        "operationId": "updateSettings",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingForm"
+              }
+            }
+          }
+        },
+        "responses": {
+          "302": {
+            "$ref": "#/components/responses/Redirect302"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequestHtml400"
+          }
+        },
+        "x-curl-example": "curl -i -X POST 'http://127.0.0.1:5000/admin/settings' -H 'Content-Type: application/x-www-form-urlencoded' -b cookies.txt -c cookies.txt --data-urlencode 'name=Admin' --data-urlencode 'blog_title=Bluelog' --data-urlencode 'blog_sub_title=No, I am the real thing.' --data-urlencode 'about=# About\\nMy profile' --data-urlencode 'csrf_token=<token>'"
+      }
+    },
+    "/admin/post/manage": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "后台文章管理列表",
+        "description": "分页列出全部文章，用于后台管理。",
+        "operationId": "managePostList",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PageParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Html200"
+          },
+          "302": {
+            "$ref": "#/components/responses/Redirect302"
+          }
+        },
+        "x-curl-example": "curl -i -b cookies.txt 'http://127.0.0.1:5000/admin/post/manage?page=1'"
+      }
+    },
+    "/admin/post/new": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "获取新建文章页",
+        "description": "返回新建文章表单页面，含分类下拉与 csrf_token。",
+        "operationId": "getNewPostPage",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Html200"
+          },
+          "302": {
+            "$ref": "#/components/responses/Redirect302"
+          }
+        },
+        "x-curl-example": "curl -i -b cookies.txt -c cookies.txt 'http://127.0.0.1:5000/admin/post/new'"
+      },
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "创建文章",
+        "description": "创建新文章。成功后跳转到文章详情页。",
+        "operationId": "createPost",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/PostForm"
+              }
+            }
+          }
+        },
+        "responses": {
+          "302": {
+            "$ref": "#/components/responses/Redirect302"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequestHtml400"
+          }
+        },
+        "x-curl-example": "curl -i -X POST 'http://127.0.0.1:5000/admin/post/new' -H 'Content-Type: application/x-www-form-urlencoded' -b cookies.txt -c cookies.txt --data-urlencode 'title=第一篇文章' --data-urlencode 'category=1' --data-urlencode 'body=# 标题\\n正文内容' --data-urlencode 'csrf_token=<token>'"
+      }
+    },
+    "/admin/post/{post_id}/edit": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "获取编辑文章页",
+        "description": "返回指定文章的编辑页，表单默认填充现有数据。",
+        "operationId": "getEditPostPage",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PostId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Html200"
+          },
+          "302": {
+            "$ref": "#/components/responses/Redirect302"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundHtml404"
+          }
+        },
+        "x-curl-example": "curl -i -b cookies.txt -c cookies.txt 'http://127.0.0.1:5000/admin/post/1/edit'"
+      },
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "更新文章",
+        "description": "更新文章标题、正文和分类。成功后跳转到文章详情页。",
+        "operationId": "updatePost",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PostId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/PostForm"
+              }
+            }
+          }
+        },
+        "responses": {
+          "302": {
+            "$ref": "#/components/responses/Redirect302"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequestHtml400"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundHtml404"
+          }
+        },
+        "x-curl-example": "curl -i -X POST 'http://127.0.0.1:5000/admin/post/1/edit' -H 'Content-Type: application/x-www-form-urlencoded' -b cookies.txt -c cookies.txt --data-urlencode 'title=更新后的标题' --data-urlencode 'category=1' --data-urlencode 'body=更新后的正文' --data-urlencode 'csrf_token=<token>'"
+      }
+    },
+    "/admin/post/{post_id}/delete": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "删除文章",
+        "description": "删除指定文章。成功后重定向回来源页，若无来源则回首页。",
+        "operationId": "deletePost",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PostId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "csrf_token"
+                ],
+                "properties": {
+                  "csrf_token": {
+                    "type": "string",
+                    "description": "Flask-WTF 生成的 CSRF token。"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "302": {
+            "$ref": "#/components/responses/Redirect302"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequestHtml400"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundHtml404"
+          }
+        },
+        "x-curl-example": "curl -i -X POST 'http://127.0.0.1:5000/admin/post/1/delete' -H 'Content-Type: application/x-www-form-urlencoded' -b cookies.txt -c cookies.txt --data-urlencode 'csrf_token=<token>'"
+      }
+    },
+    "/admin/post/{post_id}/set-comment": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "切换文章评论开关",
+        "description": "如果当前允许评论则关闭，否则开启。成功后重定向回来源页。",
+        "operationId": "togglePostComment",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PostId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "csrf_token"
+                ],
+                "properties": {
+                  "csrf_token": {
+                    "type": "string",
+                    "description": "Flask-WTF 生成的 CSRF token。"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "302": {
+            "$ref": "#/components/responses/Redirect302"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequestHtml400"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundHtml404"
+          }
+        },
+        "x-curl-example": "curl -i -X POST 'http://127.0.0.1:5000/admin/post/1/set-comment' -H 'Content-Type: application/x-www-form-urlencoded' -b cookies.txt -c cookies.txt --data-urlencode 'csrf_token=<token>'"
+      }
+    },
+    "/admin/comment/manage": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "后台评论管理列表",
+        "description": "分页列出评论。filter 参数支持 all、unread、admin。代码注释里提到 unreviewed，但实际判断值是 unread。",
+        "operationId": "manageCommentList",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "filter",
+            "in": "query",
+            "description": "评论筛选规则。all=全部，unread=未审核，admin=管理员评论。",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "unread",
+                "admin"
+              ],
+              "default": "all"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/PageParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Html200"
+          },
+          "302": {
+            "$ref": "#/components/responses/Redirect302"
+          }
+        },
+        "x-curl-example": "curl -i -b cookies.txt 'http://127.0.0.1:5000/admin/comment/manage?filter=unread&page=1'"
+      }
+    },
+    "/admin/comment/{comment_id}/approve": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "审核通过评论",
+        "description": "把指定评论的 reviewed 置为 true。",
+        "operationId": "approveComment",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CommentId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "csrf_token"
+                ],
+                "properties": {
+                  "csrf_token": {
+                    "type": "string",
+                    "description": "Flask-WTF 生成的 CSRF token。"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "302": {
+            "$ref": "#/components/responses/Redirect302"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequestHtml400"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundHtml404"
+          }
+        },
+        "x-curl-example": "curl -i -X POST 'http://127.0.0.1:5000/admin/comment/3/approve' -H 'Content-Type: application/x-www-form-urlencoded' -b cookies.txt -c cookies.txt --data-urlencode 'csrf_token=<token>'"
+      }
+    },
+    "/admin/comment/{comment_id}/delete": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "删除评论",
+        "description": "删除指定评论。成功后重定向回来源页。",
+        "operationId": "deleteComment",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CommentId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "csrf_token"
+                ],
+                "properties": {
+                  "csrf_token": {
+                    "type": "string",
+                    "description": "Flask-WTF 生成的 CSRF token。"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "302": {
+            "$ref": "#/components/responses/Redirect302"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequestHtml400"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundHtml404"
+          }
+        },
+        "x-curl-example": "curl -i -X POST 'http://127.0.0.1:5000/admin/comment/3/delete' -H 'Content-Type: application/x-www-form-urlencoded' -b cookies.txt -c cookies.txt --data-urlencode 'csrf_token=<token>'"
+      }
+    },
+    "/admin/category/manage": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "后台分类管理页",
+        "description": "返回分类管理页面。页面数据主要由模板上下文中的全局 categories 提供。",
+        "operationId": "manageCategoryPage",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Html200"
+          },
+          "302": {
+            "$ref": "#/components/responses/Redirect302"
+          }
+        },
+        "x-curl-example": "curl -i -b cookies.txt 'http://127.0.0.1:5000/admin/category/manage'"
+      }
+    },
+    "/admin/category/new": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "获取新建分类页",
+        "description": "返回新建分类表单页面。",
+        "operationId": "getNewCategoryPage",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Html200"
+          },
+          "302": {
+            "$ref": "#/components/responses/Redirect302"
+          }
+        },
+        "x-curl-example": "curl -i -b cookies.txt -c cookies.txt 'http://127.0.0.1:5000/admin/category/new'"
+      },
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "创建分类",
+        "description": "创建新分类。分类名称必须唯一。",
+        "operationId": "createCategory",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryForm"
+              }
+            }
+          }
+        },
+        "responses": {
+          "302": {
+            "$ref": "#/components/responses/Redirect302"
+          },
+          "200": {
+            "$ref": "#/components/responses/Html200"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequestHtml400"
+          }
+        },
+        "x-curl-example": "curl -i -X POST 'http://127.0.0.1:5000/admin/category/new' -H 'Content-Type: application/x-www-form-urlencoded' -b cookies.txt -c cookies.txt --data-urlencode 'name=技术' --data-urlencode 'csrf_token=<token>'"
+      }
+    },
+    "/admin/category/{category_id}/edit": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "获取编辑分类页",
+        "description": "返回编辑分类表单页面。默认分类 ID=1 不允许编辑，会直接跳转首页。",
+        "operationId": "getEditCategoryPage",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CategoryId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Html200"
+          },
+          "302": {
+            "$ref": "#/components/responses/Redirect302"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundHtml404"
+          }
+        },
+        "x-curl-example": "curl -i -b cookies.txt -c cookies.txt 'http://127.0.0.1:5000/admin/category/2/edit'"
+      },
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "更新分类",
+        "description": "更新分类名称。默认分类 ID=1 不允许编辑。",
+        "operationId": "updateCategory",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CategoryId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryForm"
+              }
+            }
+          }
+        },
+        "responses": {
+          "302": {
+            "$ref": "#/components/responses/Redirect302"
+          },
+          "200": {
+            "$ref": "#/components/responses/Html200"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequestHtml400"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundHtml404"
+          }
+        },
+        "x-curl-example": "curl -i -X POST 'http://127.0.0.1:5000/admin/category/2/edit' -H 'Content-Type: application/x-www-form-urlencoded' -b cookies.txt -c cookies.txt --data-urlencode 'name=后端' --data-urlencode 'csrf_token=<token>'"
+      }
+    },
+    "/admin/category/{category_id}/delete": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "删除分类",
+        "description": "删除指定分类。默认分类 ID=1 不可删除。删除前会把该分类下文章迁移到默认分类 ID=1。",
+        "operationId": "deleteCategory",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CategoryId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "csrf_token"
+                ],
+                "properties": {
+                  "csrf_token": {
+                    "type": "string",
+                    "description": "Flask-WTF 生成的 CSRF token。"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "302": {
+            "$ref": "#/components/responses/Redirect302"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequestHtml400"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundHtml404"
+          }
+        },
+        "x-curl-example": "curl -i -X POST 'http://127.0.0.1:5000/admin/category/2/delete' -H 'Content-Type: application/x-www-form-urlencoded' -b cookies.txt -c cookies.txt --data-urlencode 'csrf_token=<token>'"
+      }
+    },
+    "/admin/link/manage": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "后台友情链接管理页",
+        "description": "返回友情链接管理页面。页面数据主要由模板上下文中的全局 links 提供。",
+        "operationId": "manageLinkPage",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Html200"
+          },
+          "302": {
+            "$ref": "#/components/responses/Redirect302"
+          }
+        },
+        "x-curl-example": "curl -i -b cookies.txt 'http://127.0.0.1:5000/admin/link/manage'"
+      }
+    },
+    "/admin/link/new": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "获取新建友情链接页",
+        "description": "返回新建友情链接表单页面。",
+        "operationId": "getNewLinkPage",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Html200"
+          },
+          "302": {
+            "$ref": "#/components/responses/Redirect302"
+          }
+        },
+        "x-curl-example": "curl -i -b cookies.txt -c cookies.txt 'http://127.0.0.1:5000/admin/link/new'"
+      },
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "创建友情链接",
+        "description": "创建新友情链接记录。",
+        "operationId": "createLink",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkForm"
+              }
+            }
+          }
+        },
+        "responses": {
+          "302": {
+            "$ref": "#/components/responses/Redirect302"
+          },
+          "200": {
+            "$ref": "#/components/responses/Html200"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequestHtml400"
+          }
+        },
+        "x-curl-example": "curl -i -X POST 'http://127.0.0.1:5000/admin/link/new' -H 'Content-Type: application/x-www-form-urlencoded' -b cookies.txt -c cookies.txt --data-urlencode 'name=OpenAI' --data-urlencode 'url=https://openai.com' --data-urlencode 'csrf_token=<token>'"
+      }
+    },
+    "/admin/link/{link_id}/edit": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "获取编辑友情链接页",
+        "description": "返回编辑友情链接表单页面，默认带出现有 name/url。",
+        "operationId": "getEditLinkPage",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LinkId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Html200"
+          },
+          "302": {
+            "$ref": "#/components/responses/Redirect302"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundHtml404"
+          }
+        },
+        "x-curl-example": "curl -i -b cookies.txt -c cookies.txt 'http://127.0.0.1:5000/admin/link/1/edit'"
+      },
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "更新友情链接",
+        "description": "更新友情链接 name/url。",
+        "operationId": "updateLink",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LinkId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkForm"
+              }
+            }
+          }
+        },
+        "responses": {
+          "302": {
+            "$ref": "#/components/responses/Redirect302"
+          },
+          "200": {
+            "$ref": "#/components/responses/Html200"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequestHtml400"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundHtml404"
+          }
+        },
+        "x-curl-example": "curl -i -X POST 'http://127.0.0.1:5000/admin/link/1/edit' -H 'Content-Type: application/x-www-form-urlencoded' -b cookies.txt -c cookies.txt --data-urlencode 'name=OpenAI 官网' --data-urlencode 'url=https://openai.com' --data-urlencode 'csrf_token=<token>'"
+      }
+    },
+    "/admin/link/{link_id}/delete": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "删除友情链接",
+        "description": "删除指定友情链接记录。",
+        "operationId": "deleteLink",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LinkId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "csrf_token"
+                ],
+                "properties": {
+                  "csrf_token": {
+                    "type": "string",
+                    "description": "Flask-WTF 生成的 CSRF token。"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "302": {
+            "$ref": "#/components/responses/Redirect302"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequestHtml400"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundHtml404"
+          }
+        },
+        "x-curl-example": "curl -i -X POST 'http://127.0.0.1:5000/admin/link/1/delete' -H 'Content-Type: application/x-www-form-urlencoded' -b cookies.txt -c cookies.txt --data-urlencode 'csrf_token=<token>'"
+      }
+    },
+    "/admin/upload-image": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "上传文章图片",
+        "description": "后台 Markdown 编辑器配套上传接口。需要登录。请求字段名固定为 image。服务端仅允许 png/jpg/jpeg/gif/webp，最大 5MB。成功返回 JSON；失败返回 JSON 错误消息。",
+        "operationId": "uploadImage",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "image"
+                ],
+                "properties": {
+                  "image": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "待上传图片文件。扩展名必须为 png/jpg/jpeg/gif/webp。"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "上传成功。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadImageSuccess"
+                },
+                "examples": {
+                  "success": {
+                    "value": {
+                      "url": "/uploads/9c7d7d62b4b44d12a3d6363b2bc2f6a4.png",
+                      "filename": "9c7d7d62b4b44d12a3d6363b2bc2f6a4.png"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "上传失败，例如缺少文件、文件太大、格式不支持。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorMessage"
+                },
+                "examples": {
+                  "missingImage": {
+                    "value": {
+                      "message": "Missing image file."
+                    }
+                  },
+                  "tooLarge": {
+                    "value": {
+                      "message": "Image is too large."
+                    }
+                  },
+                  "invalidType": {
+                    "value": {
+                      "message": "Invalid image file."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "302": {
+            "$ref": "#/components/responses/Redirect302"
+          }
+        },
+        "x-curl-example": "curl -i -X POST 'http://127.0.0.1:5000/admin/upload-image' -b cookies.txt -c cookies.txt -F 'image=@/path/to/example.png'"
+      }
+    }
+  }
+}
