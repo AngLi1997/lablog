@@ -2,6 +2,30 @@ nav {
     margin-bottom: 20px;
 }
 
+body {
+    --markdown-code-bg: #f6f8fa;
+    --markdown-code-text: #24292f;
+    --markdown-copy-text: #57606a;
+    --markdown-copy-hover-text: #24292f;
+    --markdown-copy-success-text: #1a7f37;
+    --markdown-scrollbar-thumb-start: #c1c7d0;
+    --markdown-scrollbar-thumb-end: #afb8c1;
+    --markdown-scrollbar-thumb-hover-start: #afb8c1;
+    --markdown-scrollbar-thumb-hover-end: #8c959f;
+}
+
+body.theme-black_swan {
+    --markdown-code-bg: #303030;
+    --markdown-code-text: #f5f5f5;
+    --markdown-copy-text: #b5b5b5;
+    --markdown-copy-hover-text: #ffffff;
+    --markdown-copy-success-text: #00bc8c;
+    --markdown-scrollbar-thumb-start: #5c5c5c;
+    --markdown-scrollbar-thumb-end: #737373;
+    --markdown-scrollbar-thumb-hover-start: #737373;
+    --markdown-scrollbar-thumb-hover-end: #8a8a8a;
+}
+
 img {
     max-width: 100%;
     height: auto !important;
@@ -92,17 +116,17 @@ footer {
     padding: 12px 12px 14px;
     overflow-x: auto;
     overflow-y: hidden;
-    color: #24292f;
-    background: #f6f8fa;
+    color: var(--markdown-code-text);
+    background: var(--markdown-code-bg);
     border: 0;
     border-radius: 0;
     scrollbar-width: thin;
-    scrollbar-color: #c1c7d0 #eaeef2;
+    scrollbar-color: var(--markdown-scrollbar-thumb-end) var(--markdown-code-bg);
 }
 
 .markdown-body code {
     padding: 0.15em 0.35em;
-    background: #f6f8fa;
+    background: var(--markdown-code-bg);
     border-radius: 3px;
 }
 
@@ -127,7 +151,7 @@ footer {
 .markdown-code-block {
     position: relative;
     margin: 1rem 0;
-    background: #f6f8fa;
+    background: var(--markdown-code-bg);
     border: 0;
     border-radius: 0;
     box-shadow: none;
@@ -136,11 +160,11 @@ footer {
 .markdown-copy-btn {
     position: absolute;
     top: 6px;
-    right: 6px;
+    right: 10px;
     z-index: 2;
     display: inline-block;
     padding: 0;
-    color: #57606a;
+    color: var(--markdown-copy-text);
     font-size: 13px;
     line-height: 1.4;
     background: transparent;
@@ -153,14 +177,14 @@ footer {
 
 .markdown-copy-btn:hover,
 .markdown-copy-btn:focus {
-    color: #24292f;
+    color: var(--markdown-copy-hover-text);
     background: transparent;
     outline: none;
     text-decoration: underline;
 }
 
 .markdown-copy-btn.is-copied {
-    color: #1a7f37;
+    color: var(--markdown-copy-success-text);
 }
 
 .markdown-code-block pre::-webkit-scrollbar {
@@ -168,20 +192,24 @@ footer {
 }
 
 .markdown-code-block pre::-webkit-scrollbar-track {
-    background: #f6f8fa;
+    background: transparent;
     border-radius: 999px;
 }
 
 .markdown-code-block pre::-webkit-scrollbar-thumb {
-    background: linear-gradient(90deg, #c1c7d0, #afb8c1);
-    border: 3px solid #f6f8fa;
+    background: linear-gradient(90deg, var(--markdown-scrollbar-thumb-start), var(--markdown-scrollbar-thumb-end));
+    border: 3px solid var(--markdown-code-bg);
     border-radius: 999px;
 }
 
 .markdown-code-block pre::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(90deg, #afb8c1, #8c959f);
+    background: linear-gradient(
+        90deg,
+        var(--markdown-scrollbar-thumb-hover-start),
+        var(--markdown-scrollbar-thumb-hover-end)
+    );
 }
 
 .markdown-code-block pre::-webkit-scrollbar-corner {
-    background: #f6f8fa;
+    background: transparent;
 }
