@@ -5,7 +5,6 @@
     :copyright: © 2026 Ang Li <liangliangaichirou@gmail.com>
     :license: MIT, see LICENSE for more details.
 """
-from flask_ckeditor import CKEditorField
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, SelectField, TextAreaField, ValidationError, HiddenField, \
     BooleanField, PasswordField
@@ -25,14 +24,22 @@ class SettingForm(FlaskForm):
     name = StringField('Name', validators=[DataRequired(), Length(1, 30)])
     blog_title = StringField('Blog Title', validators=[DataRequired(), Length(1, 60)])
     blog_sub_title = StringField('Blog Sub Title', validators=[DataRequired(), Length(1, 100)])
-    about = CKEditorField('About Page', validators=[DataRequired()])
+    about = TextAreaField('About Page', validators=[DataRequired()], render_kw={
+        'rows': 18,
+        'data-markdown-editor': 'true',
+        'data-markdown-help': 'Markdown'
+    })
     submit = SubmitField()
 
 
 class PostForm(FlaskForm):
     title = StringField('Title', validators=[DataRequired(), Length(1, 60)])
     category = SelectField('Category', coerce=int, default=1)
-    body = CKEditorField('Body', validators=[DataRequired()])
+    body = TextAreaField('Body', validators=[DataRequired()], render_kw={
+        'rows': 20,
+        'data-markdown-editor': 'true',
+        'data-markdown-help': 'Markdown'
+    })
     submit = SubmitField()
 
     def __init__(self, *args, **kwargs):

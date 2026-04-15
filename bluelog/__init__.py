@@ -39,9 +39,10 @@ load_runtime_env()
 from bluelog.blueprints.admin import admin_bp
 from bluelog.blueprints.auth import auth_bp
 from bluelog.blueprints.blog import blog_bp
-from bluelog.extensions import bootstrap, db, login_manager, csrf, ckeditor, mail, moment, toolbar, migrate
+from bluelog.extensions import bootstrap, db, login_manager, csrf, mail, moment, toolbar, migrate
 from bluelog.models import Admin, Post, Category, Comment, Link
 from bluelog.settings import config
+from bluelog.utils import render_markdown
 
 
 def create_app(config_name=None):
@@ -58,6 +59,7 @@ def create_app(config_name=None):
     register_errors(app)
     register_shell_context(app)
     register_template_context(app)
+    register_template_filters(app)
     register_request_handlers(app)
     return app
 
@@ -101,7 +103,6 @@ def register_extensions(app):
     db.init_app(app)
     login_manager.init_app(app)
     csrf.init_app(app)
-    ckeditor.init_app(app)
     mail.init_app(app)
     moment.init_app(app)
     toolbar.init_app(app)
@@ -133,6 +134,12 @@ def register_template_context(app):
         return dict(
             admin=admin, categories=categories,
             links=links, unread_comments=unread_comments)
+
+
+def register_template_filters(app):
+    @app.template_filter()
+    def markdown(value):
+        return render_markdown(value)
 
 
 def register_errors(app):
