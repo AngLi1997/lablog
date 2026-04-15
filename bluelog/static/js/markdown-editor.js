@@ -122,8 +122,10 @@
 
                 copyButton = document.createElement('button');
                 copyButton.type = 'button';
-                copyButton.className = 'btn btn-sm btn-light markdown-copy-btn';
-                copyButton.textContent = '复制';
+                copyButton.className = 'markdown-copy-btn';
+                copyButton.setAttribute('aria-label', '复制代码');
+                copyButton.setAttribute('title', '复制代码');
+                copyButton.innerHTML = '<span class="markdown-copy-icon" aria-hidden="true"></span>';
 
                 pre.parentNode.insertBefore(wrapper, pre);
                 wrapper.appendChild(copyButton);
@@ -141,6 +143,7 @@
         var wrapper = button.closest('.markdown-code-block');
         var code = wrapper ? wrapper.querySelector('code') : null;
         var text = code ? code.textContent : '';
+        var icon = button.querySelector('.markdown-copy-icon');
 
         if (!text) {
             return;
@@ -148,12 +151,92 @@
 
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(text).then(function () {
-                button.textContent = '已复制';
+                button.classList.add('is-copied');
+                if (icon) {
+                    icon.setAttribute('data-copied', 'true');
+                }
                 window.setTimeout(function () {
-                    button.textContent = '复制';
+                    button.classList.remove('is-copied');
+                    if (icon) {
+                        icon.removeAttribute('data-copied');
+                    }
                 }, 1500);
             });
         }
+    }
+
+    function insertText(textarea, text) {
+        var start = textarea.selectionStart;
+        var end = textarea.selectionEnd;
+        var value = textarea.value;
+        textarea.value = value.slice(0, start) + text + value.slice(end);
+        textarea.focus();
+        textarea.selectionStart = start + text.length;
+        textarea.selectionEnd = start + text.length;
+    }
+
+    function getCsrfToken() {
+        var input = document.querySelector('input[name="csrf_token"]');
+        return input ? input.value : '';
+    }
+
+    function uploadPastedImage(file) {
+        var formData = new FormData();
+        formData.append('image', file, file.name || 'clipboard-image.png');
+        return fetch('/admin/upload-image', {
+            method: 'POST',
+            body: formData,
+            credentials: 'same-origin',
+            headers: {
+                'X-CSRFToken': getCsrfToken()
+            }
+        }).then(function (response) {
+            return response.json().then(function (payload) {
+                if (!response.ok) {
+                    throw new Error(payload.message || 'Upload failed.');
+                }
+                return payload;
+            });
+        });
+    }
+
+    function bindPasteUpload(textarea, help) {
+        textarea.addEventListener('paste', function (event) {
+            var items = event.clipboardData && event.clipboardData.items;
+            var imageItem;
+            var file;
+
+            if (!items) {
+                return;
+            }
+
+            imageItem = Array.prototype.find.call(items, function (item) {
+                return item.kind === 'file' && item.type.indexOf('image/') === 0;
+            });
+
+            if (!imageItem) {
+                return;
+            }
+
+            file = imageItem.getAsFile();
+            if (!file) {
+                return;
+            }
+
+            event.preventDefault();
+            textarea.disabled = true;
+            help.textContent = '正在上传粘贴的图片...';
+
+            uploadPastedImage(file).then(function (payload) {
+                insertText(textarea, '![](' + payload.url + ')');
+                help.textContent = '图片已上传，已插入 Markdown。';
+            }).catch(function (error) {
+                help.textContent = error.message || '图片上传失败。';
+            }).finally(function () {
+                textarea.disabled = false;
+                textarea.focus();
+            });
+        });
     }
 
     function wrapSelection(textarea, prefix, suffix, placeholder) {
@@ -258,9 +341,11 @@
 
         var help = document.createElement('small');
         help.className = 'form-text text-muted markdown-help';
+        help.textContent = '支持 Markdown，可直接粘贴截图上传图片。';
 
         textarea.classList.add('markdown-textarea');
         handleTabKey(textarea);
+        bindPasteUpload(textarea, help);
         textarea.parentNode.insertBefore(container, textarea);
         container.appendChild(toolbar);
         container.appendChild(textarea);

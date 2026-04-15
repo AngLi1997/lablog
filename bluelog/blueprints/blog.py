@@ -5,7 +5,8 @@
     :copyright: © 2026 Ang Li <liangliangaichirou@gmail.com>
     :license: MIT, see LICENSE for more details.
 """
-from flask import render_template, flash, redirect, url_for, request, current_app, Blueprint, abort, make_response
+from flask import render_template, flash, redirect, url_for, request, current_app, Blueprint, abort, make_response, \
+    send_from_directory
 from flask_login import current_user
 
 from bluelog.emails import send_new_comment_email, send_new_reply_email
@@ -104,3 +105,8 @@ def change_theme(theme_name):
     response = make_response(redirect_back())
     response.set_cookie('theme', theme_name, max_age=30 * 24 * 60 * 60)
     return response
+
+
+@blog_bp.route('/uploads/<path:filename>')
+def uploaded_file(filename):
+    return send_from_directory(current_app.config['BLUELOG_UPLOAD_PATH'], filename)

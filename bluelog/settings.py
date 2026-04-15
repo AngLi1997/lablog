@@ -54,6 +54,9 @@ class BaseConfig(object):
     # ('theme name', 'display name')
     BLUELOG_THEMES = {'perfect_blue': 'Perfect Blue', 'black_swan': 'Black Swan'}
     BLUELOG_SLOW_QUERY_THRESHOLD = 1
+    BLUELOG_UPLOAD_PATH = os.path.join(basedir, 'uploads')
+    BLUELOG_UPLOAD_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+    BLUELOG_PASTE_IMAGE_MAX_SIZE = 5 * 1024 * 1024
 
 
 class DevelopmentConfig(BaseConfig):

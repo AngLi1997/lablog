@@ -9,11 +9,14 @@ try:
     from urlparse import urlparse, urljoin
 except ImportError:
     from urllib.parse import urlparse, urljoin
+import os
 import re
+import uuid
 from html import escape
 
 from flask import request, redirect, url_for, current_app
 from markupsafe import Markup
+from werkzeug.utils import secure_filename
 
 
 CODE_BLOCK_RE = re.compile(r'```([\w+-]*)\n(.*?)```', re.DOTALL)
@@ -51,7 +54,9 @@ def render_markdown(text):
         class_attr = ' class="language-%s"' % language if language else ''
         placeholders[placeholder] = (
             '<div class="markdown-code-block">'
-            '<button type="button" class="btn btn-sm btn-light markdown-copy-btn">复制</button>'
+            '<button type="button" class="markdown-copy-btn" aria-label="复制代码" title="复制代码">'
+            '<span class="markdown-copy-icon" aria-hidden="true"></span>'
+            '</button>'
             '<pre><code%s>%s</code></pre>'
             '</div>'
         ) % (class_attr, escape(raw_code))
@@ -168,3 +173,26 @@ def redirect_back(default='blog.index', **kwargs):
         if is_safe_url(target):
             return redirect(target)
     return redirect(url_for(default, **kwargs))
+
+
+def allowed_image_file(filename):
+    if '.' not in filename:
+        return False
+    extension = filename.rsplit('.', 1)[1].lower()
+    return extension in current_app.config['BLUELOG_UPLOAD_EXTENSIONS']
+
+
+def save_image_file(storage):
+    filename = secure_filename(storage.filename or '')
+    if not filename or not allowed_image_file(filename):
+        raise ValueError('Invalid image file.')
+
+    upload_path = current_app.config['BLUELOG_UPLOAD_PATH']
+    if not os.path.exists(upload_path):
+        os.makedirs(upload_path)
+
+    extension = filename.rsplit('.', 1)[1].lower()
+    generated_name = '%s.%s' % (uuid.uuid4().hex, extension)
+    final_path = os.path.join(upload_path, generated_name)
+    storage.save(final_path)
+    return generated_name

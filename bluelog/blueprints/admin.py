@@ -5,13 +5,13 @@
     :copyright: © 2026 Ang Li <liangliangaichirou@gmail.com>
     :license: MIT, see LICENSE for more details.
 """
-from flask import render_template, flash, redirect, url_for, request, current_app, Blueprint
+from flask import render_template, flash, redirect, url_for, request, current_app, Blueprint, jsonify
 from flask_login import login_required, current_user
 
 from bluelog.extensions import db
 from bluelog.forms import SettingForm, PostForm, CategoryForm, LinkForm
 from bluelog.models import Post, Category, Comment, Link
-from bluelog.utils import redirect_back
+from bluelog.utils import redirect_back, save_image_file
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -239,3 +239,26 @@ def delete_link(link_id):
     db.session.commit()
     flash('Link deleted.', 'success')
     return redirect(url_for('.manage_link'))
+
+
+@admin_bp.route('/upload-image', methods=['POST'])
+@login_required
+def upload_image():
+    image = request.files.get('image')
+    if image is None:
+        return jsonify(message='Missing image file.'), 400
+
+    max_size = current_app.config['BLUELOG_PASTE_IMAGE_MAX_SIZE']
+    image.stream.seek(0, 2)
+    file_size = image.stream.tell()
+    image.stream.seek(0)
+
+    if file_size > max_size:
+        return jsonify(message='Image is too large.'), 400
+
+    try:
+        filename = save_image_file(image)
+    except ValueError as exc:
+        return jsonify(message=str(exc)), 400
+
+    return jsonify(url=url_for('blog.uploaded_file', filename=filename), filename=filename), 201
