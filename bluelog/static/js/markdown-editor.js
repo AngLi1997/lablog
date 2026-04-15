@@ -20,19 +20,27 @@
 
     function highlightCode(code, language) {
         var html = escapeHtml(code);
+        var normalizedLanguage = (language || '').toLowerCase();
         html = html.replace(/([\'"])(?:(?=(\\?))\2.)*?\1/g, '<span class="md-token-string">$&</span>');
         html = html.replace(/(#.*$|\/\/.*$)/gm, '<span class="md-token-comment">$1</span>');
         html = html.replace(/\b\d+(\.\d+)?\b/g, '<span class="md-token-number">$&</span>');
-        if (['python', 'py'].indexOf(language) >= 0) {
+        html = html.replace(/\b(true|false|null|undefined|None)\b/g, '<span class="md-token-constant">$1</span>');
+        if (['python', 'py', 'bash', 'sh', 'shell', 'zsh', 'yaml', 'yml', 'sql'].indexOf(normalizedLanguage) >= 0) {
             html = html.replace(
-                /\b(and|as|assert|async|await|break|class|continue|def|elif|else|except|False|for|from|if|import|in|is|lambda|None|nonlocal|not|or|pass|raise|return|True|try|while|with|yield)\b/g,
+                /\b(and|as|assert|async|await|break|case|class|continue|def|elif|else|esac|except|False|fi|for|from|if|import|in|is|lambda|None|nonlocal|not|or|pass|raise|return|select|then|True|try|while|with|yield|where|from|insert|update|delete|join|into|values|set|group|order|by|limit)\b/gi,
                 '<span class="md-token-keyword">$1</span>'
             );
-        } else if (['javascript', 'js', 'typescript', 'ts', 'json'].indexOf(language) >= 0) {
+        } else if (['javascript', 'js', 'typescript', 'ts', 'json', 'java', 'c', 'cpp', 'cxx', 'go', 'rust', 'php'].indexOf(normalizedLanguage) >= 0) {
             html = html.replace(
-                /\b(break|case|catch|class|const|continue|default|delete|else|export|extends|false|finally|for|function|if|import|in|instanceof|let|new|null|return|super|switch|this|throw|true|try|typeof|var|while)\b/g,
+                /\b(break|case|catch|class|const|continue|default|delete|else|enum|export|extends|false|finally|fn|for|function|if|implements|import|in|instanceof|interface|let|match|new|null|package|private|protected|public|return|static|struct|super|switch|this|throw|trait|true|try|type|typeof|use|var|void|while)\b/g,
                 '<span class="md-token-keyword">$1</span>'
             );
+        } else if (['html', 'xml'].indexOf(normalizedLanguage) >= 0) {
+            html = html.replace(/(&lt;\/?)([\w:-]+)/g, '$1<span class="md-token-keyword">$2</span>');
+            html = html.replace(/([\w:-]+)=/g, '<span class="md-token-attr">$1</span>=');
+        } else if (['css', 'scss', 'less'].indexOf(normalizedLanguage) >= 0) {
+            html = html.replace(/([.#]?[\w-]+)(\s*\{)/g, '<span class="md-token-keyword">$1</span>$2');
+            html = html.replace(/([\w-]+)(\s*:)/g, '<span class="md-token-attr">$1</span>$2');
         }
         return html;
     }
@@ -215,6 +223,26 @@
         }
     }
 
+    function handleTabKey(textarea) {
+        textarea.addEventListener('keydown', function (event) {
+            var start;
+            var end;
+            var value;
+
+            if (event.key !== 'Tab') {
+                return;
+            }
+
+            event.preventDefault();
+            start = textarea.selectionStart;
+            end = textarea.selectionEnd;
+            value = textarea.value;
+            textarea.value = value.slice(0, start) + '\t' + value.slice(end);
+            textarea.selectionStart = start + 1;
+            textarea.selectionEnd = start + 1;
+        });
+    }
+
     function buildToolbar(textarea) {
         var container = document.createElement('div');
         container.className = 'markdown-editor';
@@ -224,8 +252,8 @@
 
         var previewButton = document.createElement('button');
         previewButton.type = 'button';
-        previewButton.className = 'btn btn-sm btn-outline-primary markdown-preview-toggle';
-        previewButton.textContent = '预览';
+        previewButton.className = 'btn btn-sm btn-outline-secondary markdown-toolbar-btn markdown-preview-toggle';
+        previewButton.textContent = 'Preview';
         previewButton.dataset.mode = 'edit';
         toolbar.appendChild(previewButton);
 
@@ -256,6 +284,7 @@
         help.textContent = '支持 Markdown 编辑和预览，代码块会在预览中高亮。';
 
         textarea.classList.add('markdown-textarea');
+        handleTabKey(textarea);
         textarea.parentNode.insertBefore(container, textarea);
         container.appendChild(toolbar);
         container.appendChild(textarea);
@@ -275,13 +304,13 @@
                     textarea.hidden = true;
                     textarea.readOnly = true;
                     previewButton.dataset.mode = 'preview';
-                    previewButton.textContent = '返回编辑';
+                    previewButton.textContent = 'Edit';
                 } else {
                     preview.hidden = true;
                     textarea.hidden = false;
                     textarea.readOnly = false;
                     previewButton.dataset.mode = 'edit';
-                    previewButton.textContent = '预览';
+                    previewButton.textContent = 'Preview';
                     textarea.focus();
                 }
                 return;

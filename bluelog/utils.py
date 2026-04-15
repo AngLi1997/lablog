@@ -26,17 +26,25 @@ HEADING_RE = re.compile(r'^#{1,6}\s+', re.MULTILINE)
 LIST_RE = re.compile(r'^\s*[-*+]\s+', re.MULTILINE)
 QUOTE_RE = re.compile(r'^\s*>\s?', re.MULTILINE)
 FENCE_RE = re.compile(r'^```[\w+-]*\n|\n```$', re.MULTILINE)
-PYTHON_KEYWORDS = re.compile(
-    r'\b(and|as|assert|async|await|break|class|continue|def|elif|else|except|False|for|from|if|import|in|is|'
-    r'lambda|None|nonlocal|not|or|pass|raise|return|True|try|while|with|yield)\b'
+SHELL_SQL_PY_KEYWORDS = re.compile(
+    r'\b(and|as|assert|async|await|break|case|class|continue|def|elif|else|esac|except|False|fi|for|from|if|'
+    r'import|in|insert|into|is|join|lambda|limit|None|nonlocal|not|or|order|by|group|pass|raise|return|select|'
+    r'set|then|True|try|update|delete|values|where|while|with|yield)\b',
+    re.IGNORECASE
 )
-JS_KEYWORDS = re.compile(
-    r'\b(break|case|catch|class|const|continue|default|delete|else|export|extends|false|finally|for|function|'
-    r'if|import|in|instanceof|let|new|null|return|super|switch|this|throw|true|try|typeof|var|while)\b'
+SYSTEM_KEYWORDS = re.compile(
+    r'\b(break|case|catch|class|const|continue|default|delete|else|enum|export|extends|false|finally|fn|for|'
+    r'function|if|implements|import|in|instanceof|interface|let|match|new|null|package|private|protected|public|'
+    r'return|static|struct|super|switch|this|throw|trait|true|try|type|typeof|use|var|void|while)\b'
 )
 NUMBER_RE = re.compile(r'\b\d+(\.\d+)?\b')
 STRING_RE = re.compile(r'([\'"])(?:(?=(\\?))\2.)*?\1')
 COMMENT_RE = re.compile(r'(#.*$|//.*$)', re.MULTILINE)
+CONSTANT_RE = re.compile(r'\b(true|false|null|undefined|None)\b')
+HTML_TAG_RE = re.compile(r'(&lt;\/?)([\w:-]+)')
+HTML_ATTR_RE = re.compile(r'([\w:-]+)=')
+CSS_SELECTOR_RE = re.compile(r'([.#]?[\w-]+)(\s*\{)')
+CSS_ATTR_RE = re.compile(r'([\w-]+)(\s*:)')
 
 
 def _render_inline_markdown(text):
@@ -51,6 +59,7 @@ def _render_inline_markdown(text):
 
 def _highlight_code(code, language):
     escaped = escape(code)
+    normalized_language = language.lower()
 
     def replace_pattern(text, pattern, class_name):
         return pattern.sub(lambda match: '<span class="%s">%s</span>' % (class_name, match.group(0)), text)
@@ -58,11 +67,18 @@ def _highlight_code(code, language):
     highlighted = replace_pattern(escaped, STRING_RE, 'md-token-string')
     highlighted = replace_pattern(highlighted, COMMENT_RE, 'md-token-comment')
     highlighted = replace_pattern(highlighted, NUMBER_RE, 'md-token-number')
+    highlighted = replace_pattern(highlighted, CONSTANT_RE, 'md-token-constant')
 
-    if language in ('python', 'py'):
-        highlighted = replace_pattern(highlighted, PYTHON_KEYWORDS, 'md-token-keyword')
-    elif language in ('javascript', 'js', 'typescript', 'ts', 'json'):
-        highlighted = replace_pattern(highlighted, JS_KEYWORDS, 'md-token-keyword')
+    if normalized_language in ('python', 'py', 'bash', 'sh', 'shell', 'zsh', 'yaml', 'yml', 'sql'):
+        highlighted = replace_pattern(highlighted, SHELL_SQL_PY_KEYWORDS, 'md-token-keyword')
+    elif normalized_language in ('javascript', 'js', 'typescript', 'ts', 'json', 'java', 'c', 'cpp', 'cxx', 'go', 'rust', 'php'):
+        highlighted = replace_pattern(highlighted, SYSTEM_KEYWORDS, 'md-token-keyword')
+    elif normalized_language in ('html', 'xml'):
+        highlighted = HTML_TAG_RE.sub(r'\1<span class="md-token-keyword">\2</span>', highlighted)
+        highlighted = HTML_ATTR_RE.sub(r'<span class="md-token-attr">\1</span>=', highlighted)
+    elif normalized_language in ('css', 'scss', 'less'):
+        highlighted = CSS_SELECTOR_RE.sub(r'<span class="md-token-keyword">\1</span>\2', highlighted)
+        highlighted = CSS_ATTR_RE.sub(r'<span class="md-token-attr">\1</span>\2', highlighted)
 
     return highlighted
 
