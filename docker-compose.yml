@@ -1,0 +1,19 @@
+services:
+  bluelog:
+    image: bluelog:latest
+    pull_policy: never
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      FLASK_APP: wsgi.py
+      FLASK_CONFIG: production
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./data:/data
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+    restart: unless-stopped
