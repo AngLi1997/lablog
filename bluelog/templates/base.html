@@ -12,7 +12,14 @@
               type="text/css">
         <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" type="text/css">
         <link rel="stylesheet"
-              href="{{ url_for('static', filename='css/highlight-github.min.css') }}"
+              href="{{ url_for(
+                  'static',
+                  filename='css/%s' % (
+                      'highlight-github-dark.min.css'
+                      if request.cookies.get('theme', 'perfect_blue') == 'black_swan'
+                      else 'highlight-github.min.css'
+                  )
+              ) }}"
               type="text/css">
     {% endblock head %}
 </head>

@@ -52,7 +52,7 @@ class BaseConfig(object):
     BLUELOG_MANAGE_POST_PER_PAGE = 15
     BLUELOG_COMMENT_PER_PAGE = 15
     # ('theme name', 'display name')
-    BLUELOG_THEMES = {'perfect_blue': 'Perfect Blue', 'black_swan': 'Black Swan'}
+    BLUELOG_THEMES = {'perfect_blue': '明亮', 'black_swan': '暗黑'}
     BLUELOG_SLOW_QUERY_THRESHOLD = 1
     BLUELOG_UPLOAD_PATH = os.path.join(basedir, 'uploads')
     BLUELOG_UPLOAD_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
