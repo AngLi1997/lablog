@@ -498,11 +498,11 @@ body.theme-black_swan .dropdown-item:focus {
 
 .essay-card {
     position: relative;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
     padding: 0;
     width: fit-content;
     max-width: calc(100% - 4px);
-    min-width: 320px;
+    min-width: 280px;
     background: #ffffff;
     border: 1px solid rgba(39, 128, 227, 0.18);
     border-radius: 0;
@@ -519,7 +519,7 @@ body.theme-black_swan .essay-card {
     content: '';
     position: absolute;
     left: -38px;
-    top: 24px;
+    top: 18px;
     width: 12px;
     height: 12px;
     border-radius: 0;
@@ -532,20 +532,20 @@ body.theme-black_swan .essay-card {
     justify-content: flex-end;
     align-items: center;
     margin-bottom: 0;
-    padding: 12px 14px 0;
+    padding: 8px 10px 0;
     color: var(--markdown-body-muted);
-    font-size: 0.76rem;
+    font-size: 0.72rem;
     letter-spacing: 0.03em;
     text-transform: uppercase;
 }
 
 .essay-card__content {
-    padding: 14px;
+    padding: 10px;
 }
 
 .essay-card__datetime {
     display: inline-block;
-    padding-left: 12px;
+    padding-left: 8px;
     text-align: right;
     border-left: 2px solid rgba(39, 128, 227, 0.18);
 }
@@ -555,44 +555,44 @@ body.theme-black_swan .essay-card {
 }
 
 .essay-card--images-0 {
-    width: min(420px, calc(100% - 4px));
+    width: min(360px, calc(100% - 4px));
 }
 
 .essay-card--images-1 {
-    width: min(430px, calc(100% - 4px));
+    width: min(320px, calc(100% - 4px));
 }
 
 .essay-card--images-2 {
-    width: min(500px, calc(100% - 4px));
+    width: min(420px, calc(100% - 4px));
 }
 
 .essay-card--images-3,
 .essay-card--images-4 {
-    width: min(590px, calc(100% - 4px));
+    width: min(500px, calc(100% - 4px));
 }
 
 .essay-card--images-5,
 .essay-card--images-6 {
-    width: min(640px, calc(100% - 4px));
+    width: min(560px, calc(100% - 4px));
 }
 
 .essay-card--images-7,
 .essay-card--images-8,
 .essay-card--images-9 {
-    width: min(700px, calc(100% - 4px));
+    width: min(620px, calc(100% - 4px));
 }
 
 .essay-gallery,
 .essay-image-list {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
-    margin-top: 14px;
+    gap: 8px;
+    margin-top: 10px;
 }
 
 .essay-gallery--1,
 .essay-image-list:empty + .essay-gallery--1 {
-    grid-template-columns: minmax(0, 220px);
+    grid-template-columns: minmax(0, 200px);
 }
 
 .essay-gallery--2 {
@@ -625,18 +625,18 @@ body.theme-black_swan .essay-card {
     display: block;
     width: 100%;
     height: 100%;
-    max-height: 156px;
+    max-height: 140px;
     object-fit: cover;
 }
 
 .essay-gallery--1 .essay-gallery__item img {
-    max-height: 220px;
+    max-height: 200px;
 }
 
 .essay-gallery--2 .essay-gallery__item img,
 .essay-gallery--3 .essay-gallery__item img,
 .essay-gallery--4 .essay-gallery__item img {
-    max-height: 140px;
+    max-height: 126px;
 }
 
 .navbar-search {
