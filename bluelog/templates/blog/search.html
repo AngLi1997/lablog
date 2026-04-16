@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% block title %}搜索{% endblock %}
+
+{% block content %}
+    <div class="page-header">
+        <h1>搜索结果</h1>
+        {% if query %}
+            <p class="text-muted">关键词“{{ query }}”共找到 {{ total }} 条结果</p>
+        {% else %}
+            <p class="text-muted">请输入关键词进行全文搜索。</p>
+        {% endif %}
+    </div>
+    <div class="row">
+        <div class="col-sm-8">
+            {% if query %}
+                {% if admin_result %}
+                    <section class="search-section">
+                        <h3>网站与个人信息</h3>
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <h4 class="card-title mb-2">
+                                    <a href="{{ url_for('blog.about') }}">{{ admin_result.blog_title }}</a>
+                                </h4>
+                                {% if admin_result.blog_sub_title %}
+                                    <p class="text-muted mb-2">{{ admin_result.blog_sub_title }}</p>
+                                {% endif %}
+                                {% if admin_result.name %}
+                                    <p class="mb-2">站长：{{ admin_result.name }}</p>
+                                {% endif %}
+                                {% if admin_result.about %}
+                                    <p class="mb-0">{{ admin_result.about|markdown_plain|truncate(180) }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </section>
+                {% endif %}
+
+                {% if posts %}
+                    <section class="search-section">
+                        <h3>文章</h3>
+                        {% for post in posts %}
+                            <article class="search-result">
+                                <h4><a href="{{ url_for('blog.show_post', post_id=post.id) }}">{{ post.title }}</a></h4>
+                                <p>{{ post.body|markdown_plain|truncate(180) }}</p>
+                                <small class="text-muted">
+                                    {{ moment(post.timestamp).format('LL') }}
+                                    · 分类：{{ post.category.name }}
+                                </small>
+                            </article>
+                            {% if not loop.last %}
+                                <hr>
+                            {% endif %}
+                        {% endfor %}
+                    </section>
+                {% endif %}
+
+                {% if essays %}
+                    <section class="search-section">
+                        <h3>随笔</h3>
+                        {% for essay in essays %}
+                            <article class="search-result">
+                                <h4><a href="{{ url_for('blog.show_essays') }}#essay-{{ essay.id }}">随笔 {{ moment(essay.timestamp).format('LLL') }}</a></h4>
+                                <p>{{ essay.body|markdown_plain|truncate(180) }}</p>
+                                <small class="text-muted">
+                                    {{ moment(essay.timestamp).format('LLL') }}
+                                    {% if essay.images %}
+                                        · {{ essay.images|length }} 张图片
+                                    {% endif %}
+                                </small>
+                            </article>
+                            {% if not loop.last %}
+                                <hr>
+                            {% endif %}
+                        {% endfor %}
+                    </section>
+                {% endif %}
+
+                {% if categories %}
+                    <section class="search-section">
+                        <h3>分类</h3>
+                        <div class="card mb-4">
+                            <ul class="list-group list-group-flush">
+                                {% for category in categories %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <a href="{{ url_for('blog.show_category', category_id=category.id) }}">{{ category.name }}</a>
+                                        <small class="text-muted">{{ category.posts|length }} 篇文章</small>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </section>
+                {% endif %}
+
+                {% if links %}
+                    <section class="search-section">
+                        <h3>网站信息</h3>
+                        <div class="card mb-4">
+                            <ul class="list-group list-group-flush">
+                                {% for link in links %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <a href="{{ link.url }}" target="_blank">{{ link.name }}</a>
+                                        <small class="text-muted">{{ link.url }}</small>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </section>
+                {% endif %}
+
+                {% if total == 0 %}
+                    <div class="tip">
+                        <h5>没有找到相关内容。</h5>
+                    </div>
+                {% endif %}
+            {% endif %}
+        </div>
+        <div class="col-sm-4 sidebar">
+            {% include "blog/_sidebar.html" %}
+        </div>
+    </div>
+{% endblock %}

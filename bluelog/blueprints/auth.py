@@ -29,11 +29,11 @@ def login():
         if admin:
             if username == admin.username and admin.validate_password(password):
                 login_user(admin, remember)
-                flash('Welcome back.', 'info')
+                flash('欢迎回来。', 'info')
                 return redirect_back()
-            flash('Invalid username or password.', 'warning')
+            flash('用户名或密码错误。', 'warning')
         else:
-            flash('No account.', 'warning')
+            flash('管理员账号不存在。', 'warning')
     return render_template('auth/login.html', form=form)
 
 
@@ -41,5 +41,5 @@ def login():
 @login_required
 def logout():
     logout_user()
-    flash('Logout success.', 'info')
+    flash('已退出登录。', 'info')
     return redirect_back()

@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% from 'bootstrap/form.html' import render_field %}
+
+{% block title %}编辑随笔{% endblock %}
+
+{% block content %}
+    <div class="page-header">
+        <h1>编辑随笔</h1>
+    </div>
+    <form method="post" class="essay-form" data-upload-url="{{ url_for('admin.upload_image') }}">
+        {{ form.csrf_token }}
+        {{ render_field(form.body) }}
+        {{ form.images(id='essay-images-input') }}
+        {% for error in form.images.errors %}
+            <div class="alert alert-danger">{{ error }}</div>
+        {% endfor %}
+        {% for error in form.body.errors %}
+            <div class="alert alert-danger">{{ error }}</div>
+        {% endfor %}
+        <div class="form-group">
+            <label for="essay-image-uploader">上传图片</label>
+            <input type="file" class="form-control-file" id="essay-image-uploader" accept="image/*" multiple>
+            <small class="form-text text-muted">最多可添加 9 张图片，支持 PNG、JPG、JPEG、GIF、WebP。</small>
+        </div>
+        <div class="essay-upload-feedback text-muted mb-3"></div>
+        <div class="essay-image-list"></div>
+        {% include 'admin/_essay_form_help.html' %}
+        {{ render_field(form.submit) }}
+    </form>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script type="text/javascript" src="{{ url_for('static', filename='js/essay-form.js') }}"></script>
+{% endblock %}

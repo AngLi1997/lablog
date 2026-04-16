@@ -6,6 +6,7 @@
     :license: MIT, see LICENSE for more details.
 """
 from datetime import datetime
+import json
 
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -55,6 +56,26 @@ class Post(db.Model):
 
     category = db.relationship('Category', back_populates='posts')
     comments = db.relationship('Comment', back_populates='post', cascade='all, delete-orphan')
+
+
+class Essay(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    body = db.Column(db.Text)
+    image_urls = db.Column(db.Text, default='[]')
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+    @property
+    def images(self):
+        try:
+            data = json.loads(self.image_urls or '[]')
+        except (TypeError, ValueError):
+            return []
+        return [item for item in data if isinstance(item, str) and item]
+
+    @images.setter
+    def images(self, value):
+        items = value or []
+        self.image_urls = json.dumps(items, ensure_ascii=False)
 
 
 class Comment(db.Model):

@@ -10,8 +10,9 @@ import os
 from logging.handlers import SMTPHandler, RotatingFileHandler
 
 import click
+import sqlalchemy as sa
 from dotenv import load_dotenv
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 from flask_login import current_user
 from flask_sqlalchemy import get_debug_queries
 from flask_wtf.csrf import CSRFError
@@ -37,10 +38,11 @@ def load_runtime_env():
 load_runtime_env()
 
 from bluelog.blueprints.admin import admin_bp
+from bluelog.blueprints.api import api_bp
 from bluelog.blueprints.auth import auth_bp
 from bluelog.blueprints.blog import blog_bp
 from bluelog.extensions import bootstrap, db, login_manager, csrf, mail, moment, toolbar, migrate
-from bluelog.models import Admin, Post, Category, Comment, Link
+from bluelog.models import Admin, Post, Category, Comment, Link, Essay
 from bluelog.settings import config
 from bluelog.utils import render_markdown, markdown_to_plain_text
 
@@ -60,6 +62,7 @@ def create_app(config_name=None):
     register_shell_context(app)
     register_template_context(app)
     register_template_filters(app)
+    register_compatibility_hooks(app)
     register_request_handlers(app)
     return app
 
@@ -113,12 +116,13 @@ def register_blueprints(app):
     app.register_blueprint(blog_bp)
     app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(auth_bp, url_prefix='/auth')
+    app.register_blueprint(api_bp, url_prefix='/api')
 
 
 def register_shell_context(app):
     @app.shell_context_processor
     def make_shell_context():
-        return dict(db=db, Admin=Admin, Post=Post, Category=Category, Comment=Comment)
+        return dict(db=db, Admin=Admin, Post=Post, Category=Category, Comment=Comment, Essay=Essay)
 
 
 def register_template_context(app):
@@ -146,6 +150,14 @@ def register_template_filters(app):
         return markdown_to_plain_text(value)
 
 
+def register_compatibility_hooks(app):
+    @app.before_first_request
+    def ensure_runtime_tables():
+        inspector = sa.inspect(db.engine)
+        if 'essay' not in inspector.get_table_names():
+            Essay.__table__.create(db.engine)
+
+
 def register_errors(app):
     @app.errorhandler(400)
     def bad_request(e):
@@ -161,6 +173,8 @@ def register_errors(app):
 
     @app.errorhandler(CSRFError)
     def handle_csrf_error(e):
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify(message='上传请求校验失败：%s' % e.description), 400
         return render_template('errors/400.html', description=e.description), 400
 
 
@@ -175,86 +189,87 @@ def register_commands(app):
         admin = Admin.query.first()
         if admin is not None:
             click.echo('The administrator already exists, updating...')
+            click.echo('管理员已存在，正在更新信息...')
             admin.username = username
             admin.set_password(password)
         else:
-            click.echo('Creating the temporary administrator account...')
+            click.echo('正在创建管理员账号...')
             admin = Admin(
                 username=username,
                 blog_title='Bluelog',
-                blog_sub_title="No, I'm the real thing.",
-                name='Admin',
-                about='Anything about you.'
+                blog_sub_title='分享记录与灵感。',
+                name='站长',
+                about='这里是关于页面。'
             )
             admin.set_password(password)
             db.session.add(admin)
 
         category = Category.query.first()
         if category is None:
-            click.echo('Creating the default category...')
-            category = Category(name='Default')
+            click.echo('正在创建默认分类...')
+            category = Category(name='默认分类')
             db.session.add(category)
 
         db.session.commit()
         return True
 
     @app.cli.command()
-    @click.option('--drop', is_flag=True, help='Create after drop.')
+    @click.option('--drop', is_flag=True, help='删除现有数据表后再创建。')
     def initdb(drop):
-        """Initialize the database."""
+        """初始化数据库。"""
         if drop:
-            click.confirm('This operation will delete the database, do you want to continue?', abort=True)
+            click.confirm('此操作会删除现有数据库，是否继续？', abort=True)
             db.drop_all()
-            click.echo('Drop tables.')
+            click.echo('已删除数据表。')
         db.create_all()
         bootstrap_admin()
-        click.echo('Initialized database.')
+        click.echo('数据库初始化完成。')
 
     @app.cli.command()
-    @click.option('--username', help='The username used to login.')
-    @click.option('--password', help='The password used to login.')
+    @click.option('--username', help='管理员登录用户名。')
+    @click.option('--password', help='管理员登录密码。')
     def init(username, password):
-        """Building Bluelog, just for you."""
+        """初始化站点。"""
         username = username or os.getenv('BLUELOG_ADMIN_USERNAME')
         password = password or os.getenv('BLUELOG_ADMIN_PASSWORD')
 
         if username is None:
-            username = click.prompt('The username used to login')
+            username = click.prompt('请输入管理员用户名')
         if password is None:
-            password = click.prompt('The password used to login', hide_input=True, confirmation_prompt=True)
+            password = click.prompt('请输入管理员密码', hide_input=True, confirmation_prompt=True)
 
-        click.echo('Initializing the database...')
+        click.echo('正在初始化数据库...')
         db.create_all()
         bootstrap_admin(username, password)
-        click.echo('Done.')
+        click.echo('初始化完成。')
 
     @app.cli.command()
-    @click.option('--category', default=10, help='Quantity of categories, default is 10.')
-    @click.option('--post', default=50, help='Quantity of posts, default is 50.')
-    @click.option('--comment', default=500, help='Quantity of comments, default is 500.')
+    @click.option('--category', default=10, help='分类数量，默认为 10。')
+    @click.option('--post', default=50, help='文章数量，默认为 50。')
+    @click.option('--comment', default=500, help='评论数量，默认为 500。')
     def forge(category, post, comment):
-        """Generate fake data."""
+        """生成演示数据。"""
         from bluelog.fakes import fake_admin, fake_categories, fake_posts, fake_comments, fake_links
 
         db.drop_all()
         db.create_all()
 
-        click.echo('Generating the administrator...')
+        click.echo('正在生成管理员...')
         fake_admin()
 
-        click.echo('Generating %d categories...' % category)
+        click.echo('正在生成 %d 个分类...' % category)
         fake_categories(category)
 
-        click.echo('Generating %d posts...' % post)
+        click.echo('正在生成 %d 篇文章...' % post)
         fake_posts(post)
 
-        click.echo('Generating %d comments...' % comment)
+        click.echo('正在生成 %d 条评论...' % comment)
         fake_comments(comment)
 
-        click.echo('Generating links...')
+        click.echo('正在生成友情链接...')
         fake_links()
 
-        click.echo('Done.')
+        click.echo('完成。')
 
 
 def register_request_handlers(app):

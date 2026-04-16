@@ -1,10 +1,13 @@
 {% extends 'base.html' %}
 
-{% block title %}About{% endblock %}
+{% block title %}关于{% endblock %}
+{% set meta_title = '关于' %}
+{% set meta_description = admin.about|markdown_plain|truncate(140) if admin.about else admin.blog_sub_title|default('关于站点与作者') %}
+{% set canonical_url = url_for('blog.about', _external=True) %}
 
 {% block content %}
     <div class="page-header">
-        <h1>About</h1>
+        <h1>关于</h1>
     </div>
     <div class="row">
         <div class="col-sm-8">

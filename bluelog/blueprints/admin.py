@@ -5,12 +5,14 @@
     :copyright: © 2026 Ang Li <liangliangaichirou@gmail.com>
     :license: MIT, see LICENSE for more details.
 """
+import json
+
 from flask import render_template, flash, redirect, url_for, request, current_app, Blueprint, jsonify
 from flask_login import login_required, current_user
 
 from bluelog.extensions import db
-from bluelog.forms import SettingForm, PostForm, CategoryForm, LinkForm
-from bluelog.models import Post, Category, Comment, Link
+from bluelog.forms import SettingForm, PostForm, EssayForm, CategoryForm, LinkForm
+from bluelog.models import Post, Essay, Category, Comment, Link
 from bluelog.utils import redirect_back, save_image_file
 
 admin_bp = Blueprint('admin', __name__)
@@ -26,7 +28,7 @@ def settings():
         current_user.blog_sub_title = form.blog_sub_title.data
         current_user.about = form.about.data
         db.session.commit()
-        flash('Setting updated.', 'success')
+        flash('设置已更新。', 'success')
         return redirect(url_for('blog.index'))
     form.name.data = current_user.name
     form.blog_title.data = current_user.blog_title
@@ -54,12 +56,9 @@ def new_post():
         body = form.body.data
         category = Category.query.get(form.category.data)
         post = Post(title=title, body=body, category=category)
-        # same with:
-        # category_id = form.category.data
-        # post = Post(title=title, body=body, category_id=category_id)
         db.session.add(post)
         db.session.commit()
-        flash('Post created.', 'success')
+        flash('文章已发布。', 'success')
         return redirect(url_for('blog.show_post', post_id=post.id))
     return render_template('admin/new_post.html', form=form)
 
@@ -74,7 +73,7 @@ def edit_post(post_id):
         post.body = form.body.data
         post.category = Category.query.get(form.category.data)
         db.session.commit()
-        flash('Post updated.', 'success')
+        flash('文章已更新。', 'success')
         return redirect(url_for('blog.show_post', post_id=post.id))
     form.title.data = post.title
     form.body.data = post.body
@@ -88,7 +87,7 @@ def delete_post(post_id):
     post = Post.query.get_or_404(post_id)
     db.session.delete(post)
     db.session.commit()
-    flash('Post deleted.', 'success')
+    flash('文章已删除。', 'success')
     return redirect_back()
 
 
@@ -98,18 +97,69 @@ def set_comment(post_id):
     post = Post.query.get_or_404(post_id)
     if post.can_comment:
         post.can_comment = False
-        flash('Comment disabled.', 'success')
+        flash('已关闭评论。', 'success')
     else:
         post.can_comment = True
-        flash('Comment enabled.', 'success')
+        flash('已开启评论。', 'success')
     db.session.commit()
+    return redirect_back()
+
+
+@admin_bp.route('/essay/manage')
+@login_required
+def manage_essay():
+    page = request.args.get('page', 1, type=int)
+    pagination = Essay.query.order_by(Essay.timestamp.desc()).paginate(
+        page, per_page=current_app.config['BLUELOG_MANAGE_POST_PER_PAGE'])
+    essays = pagination.items
+    return render_template('admin/manage_essay.html', page=page, pagination=pagination, essays=essays)
+
+
+@admin_bp.route('/essay/new', methods=['GET', 'POST'])
+@login_required
+def new_essay():
+    form = EssayForm()
+    if form.validate_on_submit():
+        essay = Essay(body=(form.body.data or '').strip())
+        essay.images = json.loads(form.images.data or '[]')
+        db.session.add(essay)
+        db.session.commit()
+        flash('随笔已发布。', 'success')
+        return redirect(url_for('blog.show_essays'))
+    return render_template('admin/new_essay.html', form=form)
+
+
+@admin_bp.route('/essay/<int:essay_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_essay(essay_id):
+    form = EssayForm()
+    essay = Essay.query.get_or_404(essay_id)
+    if form.validate_on_submit():
+        essay.body = (form.body.data or '').strip()
+        essay.images = json.loads(form.images.data or '[]')
+        db.session.commit()
+        flash('随笔已更新。', 'success')
+        return redirect(url_for('blog.show_essays'))
+    form.body.data = essay.body
+    form.images.data = json.dumps(essay.images, ensure_ascii=False)
+    form.submit.label.text = '保存随笔'
+    return render_template('admin/edit_essay.html', form=form, essay=essay)
+
+
+@admin_bp.route('/essay/<int:essay_id>/delete', methods=['POST'])
+@login_required
+def delete_essay(essay_id):
+    essay = Essay.query.get_or_404(essay_id)
+    db.session.delete(essay)
+    db.session.commit()
+    flash('随笔已删除。', 'success')
     return redirect_back()
 
 
 @admin_bp.route('/comment/manage')
 @login_required
 def manage_comment():
-    filter_rule = request.args.get('filter', 'all')  # 'all', 'unreviewed', 'admin'
+    filter_rule = request.args.get('filter', 'all')
     page = request.args.get('page', 1, type=int)
     per_page = current_app.config['BLUELOG_COMMENT_PER_PAGE']
     if filter_rule == 'unread':
@@ -130,7 +180,7 @@ def approve_comment(comment_id):
     comment = Comment.query.get_or_404(comment_id)
     comment.reviewed = True
     db.session.commit()
-    flash('Comment published.', 'success')
+    flash('评论已发布。', 'success')
     return redirect_back()
 
 
@@ -140,7 +190,7 @@ def delete_comment(comment_id):
     comment = Comment.query.get_or_404(comment_id)
     db.session.delete(comment)
     db.session.commit()
-    flash('Comment deleted.', 'success')
+    flash('评论已删除。', 'success')
     return redirect_back()
 
 
@@ -159,7 +209,7 @@ def new_category():
         category = Category(name=name)
         db.session.add(category)
         db.session.commit()
-        flash('Category created.', 'success')
+        flash('分类已创建。', 'success')
         return redirect(url_for('.manage_category'))
     return render_template('admin/new_category.html', form=form)
 
@@ -170,12 +220,12 @@ def edit_category(category_id):
     form = CategoryForm()
     category = Category.query.get_or_404(category_id)
     if category.id == 1:
-        flash('You can not edit the default category.', 'warning')
+        flash('默认分类不允许编辑。', 'warning')
         return redirect(url_for('blog.index'))
     if form.validate_on_submit():
         category.name = form.name.data
         db.session.commit()
-        flash('Category updated.', 'success')
+        flash('分类已更新。', 'success')
         return redirect(url_for('.manage_category'))
 
     form.name.data = category.name
@@ -187,10 +237,10 @@ def edit_category(category_id):
 def delete_category(category_id):
     category = Category.query.get_or_404(category_id)
     if category.id == 1:
-        flash('You can not delete the default category.', 'warning')
+        flash('默认分类不允许删除。', 'warning')
         return redirect(url_for('blog.index'))
     category.delete()
-    flash('Category deleted.', 'success')
+    flash('分类已删除。', 'success')
     return redirect(url_for('.manage_category'))
 
 
@@ -210,7 +260,7 @@ def new_link():
         link = Link(name=name, url=url)
         db.session.add(link)
         db.session.commit()
-        flash('Link created.', 'success')
+        flash('友链已创建。', 'success')
         return redirect(url_for('.manage_link'))
     return render_template('admin/new_link.html', form=form)
 
@@ -224,7 +274,7 @@ def edit_link(link_id):
         link.name = form.name.data
         link.url = form.url.data
         db.session.commit()
-        flash('Link updated.', 'success')
+        flash('友链已更新。', 'success')
         return redirect(url_for('.manage_link'))
     form.name.data = link.name
     form.url.data = link.url
@@ -237,7 +287,7 @@ def delete_link(link_id):
     link = Link.query.get_or_404(link_id)
     db.session.delete(link)
     db.session.commit()
-    flash('Link deleted.', 'success')
+    flash('友链已删除。', 'success')
     return redirect(url_for('.manage_link'))
 
 
@@ -246,7 +296,7 @@ def delete_link(link_id):
 def upload_image():
     image = request.files.get('image')
     if image is None:
-        return jsonify(message='Missing image file.'), 400
+        return jsonify(message='缺少图片文件。'), 400
 
     max_size = current_app.config['BLUELOG_PASTE_IMAGE_MAX_SIZE']
     image.stream.seek(0, 2)
@@ -254,7 +304,7 @@ def upload_image():
     image.stream.seek(0)
 
     if file_size > max_size:
-        return jsonify(message='Image is too large.'), 400
+        return jsonify(message='图片文件过大。'), 400
 
     try:
         filename = save_image_file(image)

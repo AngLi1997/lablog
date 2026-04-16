@@ -9,6 +9,7 @@ try:
     from urlparse import urlparse, urljoin
 except ImportError:
     from urllib.parse import urlparse, urljoin
+import imghdr
 import os
 import re
 import uuid
@@ -180,16 +181,41 @@ def allowed_image_file(filename):
     return extension in current_app.config['BLUELOG_UPLOAD_EXTENSIONS']
 
 
-def save_image_file(storage):
+def detect_image_extension(storage):
     filename = secure_filename(storage.filename or '')
-    if not filename or not allowed_image_file(filename):
-        raise ValueError('Invalid image file.')
+    if filename and allowed_image_file(filename):
+        return filename.rsplit('.', 1)[1].lower()
+
+    content_type = (storage.mimetype or '').lower()
+    mimetype_map = {
+        'image/jpeg': 'jpg',
+        'image/png': 'png',
+        'image/gif': 'gif',
+        'image/webp': 'webp'
+    }
+    if content_type in mimetype_map:
+        return mimetype_map[content_type]
+
+    position = storage.stream.tell()
+    header = storage.stream.read(512)
+    storage.stream.seek(position)
+    detected = imghdr.what(None, header)
+    if detected == 'jpeg':
+        return 'jpg'
+    if detected in current_app.config['BLUELOG_UPLOAD_EXTENSIONS']:
+        return detected
+    return None
+
+
+def save_image_file(storage):
+    extension = detect_image_extension(storage)
+    if not extension:
+        raise ValueError('图片格式不支持。')
 
     upload_path = current_app.config['BLUELOG_UPLOAD_PATH']
     if not os.path.exists(upload_path):
         os.makedirs(upload_path)
 
-    extension = filename.rsplit('.', 1)[1].lower()
     generated_name = '%s.%s' % (uuid.uuid4().hex, extension)
     final_path = os.path.join(upload_path, generated_name)
     storage.save(final_path)

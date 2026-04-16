@@ -1,6 +1,6 @@
 # Bluelog
 
-一个基于 Flask 的个人博客示例项目，包含公开博客页、后台管理、分类管理、评论审核、友情链接和图片上传能力。
+一个基于 Flask 的个人博客项目，包含公开博客页、随笔时间轴、后台管理、分类管理、评论审核、友情链接、图片上传和内容管理接口。
 
 ## 项目概览
 
@@ -12,18 +12,22 @@
 - 静态资源：`bluelog/static/`
 - 数据迁移：`migrations/`
 - 容器启动脚本：`docker/start.sh`
+- 本地技能：`skills/content-api-manager/`
 - 运行期目录：`data/`、`logs/`、`uploads/`
 
 ## 功能特性
 
 - 文章发布、编辑、删除
+- 随笔发布、编辑、删除，前台按时间轴展示
+- 随笔支持图片一宫格、四宫格、九宫格展示，最多 9 张
 - 分类管理，删除分类时将文章回退到默认分类
 - 评论发布、审核、删除、管理员回复
 - 后台站点设置
 - 友情链接管理
-- CKEditor 富文本编辑
+- Markdown 编辑与代码高亮
 - 本地图片上传，上传目录为 `uploads/`
 - 基于 Flask-Migrate 的数据库迁移支持
+- 提供 `/api/posts`、`/api/categories`、`/api/essays` 管理接口
 - Docker 部署支持
 
 ## 环境要求
@@ -69,13 +73,7 @@ flask init
 flask initdb
 ```
 
-4. 生成演示数据：
-
-```bash
-flask forge
-```
-
-5. 启动开发服务器：
+4. 启动开发服务器：
 
 ```bash
 flask run
@@ -92,13 +90,49 @@ http://127.0.0.1:5000
 - 用户名：`admin`
 - 密码：`helloflask`
 
+## 测试
+
+执行全部测试：
+
+```bash
+python -m unittest discover
+```
+
+当前测试覆盖：
+
+- 随笔时间轴页面渲染
+- 后台随笔表单创建与图片上限校验
+- `/api/posts`、`/api/categories`、`/api/essays` 增删查改
+
 ## CLI 命令
 
 - `flask initdb`：创建数据库表，并在环境变量存在时初始化管理员和默认分类
 - `flask initdb --drop`：先删表再重建
 - `flask init`：交互式初始化数据库和管理员账号
 - `flask forge`：重建数据库并生成假数据
-- `flask forge --category 5 --post 20 --comment 100`：指定伪造数据规模
+- `flask forge --category 5 --post 20 --comment 100`：指定演示数据规模
+
+## 内容管理接口
+
+所有 `/api/*` 接口都要求管理员登录态。
+
+- `GET /api/posts`
+- `POST /api/posts`
+- `GET /api/posts/<post_id>`
+- `PATCH /api/posts/<post_id>`
+- `DELETE /api/posts/<post_id>`
+- `GET /api/categories`
+- `POST /api/categories`
+- `GET /api/categories/<category_id>`
+- `PATCH /api/categories/<category_id>`
+- `DELETE /api/categories/<category_id>`
+- `GET /api/essays`
+- `POST /api/essays`
+- `GET /api/essays/<essay_id>`
+- `PATCH /api/essays/<essay_id>`
+- `DELETE /api/essays/<essay_id>`
+
+如果希望由 Codex 通过接口管理内容，可以直接使用仓库根目录的 `skills/content-api-manager/`。
 
 ## 数据库与配置
 
@@ -125,7 +159,7 @@ docker compose up -d
 docker compose logs -f bluelog
 ```
 
-如果镜像需要上传到仓库并在 `linux/amd64` 服务器上运行，推荐使用 `buildx` 显式构建目标平台，而不是直接使用本机默认架构构建。
+如果镜像需要上传到仓库并在 `linux/amd64` 服务器上运行，推荐使用 `buildx` 显式构建目标平台，而不是直接使用本机默认架构。
 
 单架构发布：
 
@@ -139,49 +173,13 @@ docker buildx build --platform linux/amd64 -t <registry>/<namespace>/bluelog:lat
 docker buildx build --platform linux/amd64,linux/arm64 -t <registry>/<namespace>/bluelog:latest --push .
 ```
 
-服务器拉取并启动：
-
-```bash
-docker pull <registry>/<namespace>/bluelog:latest
-```
-
-使用 `docker run` 时，推荐通过 `.env` 注入配置：
-
-```bash
-docker run -d \
-  --name bluelog \
-  --restart unless-stopped \
-  -p 80:5000 \
-  --env-file .env \
-  -v $(pwd)/data:/data \
-  -v $(pwd)/uploads:/app/uploads \
-  -v $(pwd)/logs:/app/logs \
-  crpi-lozquo71tyi4s87k.cn-chengdu.personal.cr.aliyuncs.com/liang1997/bluelog
-```
-
-容器行为说明：
-
-- 暴露端口 `5000`
-- 挂载 `./data` 到容器内 `/data`
-- 挂载 `./uploads` 到容器内 `/app/uploads`
-- 挂载 `./logs` 到容器内 `/app/logs`
-- 镜像内默认设置 `FLASK_APP=wsgi.py`
-- 镜像内默认设置 `FLASK_CONFIG=production`
-- `DATABASE_URL` 由 `.env` 或外部环境变量提供，不再要求在启动命令里显式指定
-
-跨平台说明：
-
-- 在 Apple Silicon 设备上直接执行 `docker compose build`，默认可能产出 `linux/arm64` 镜像
-- 如果该镜像被上传后运行在 `linux/amd64` 服务器，可能出现 `no matching manifest for linux/amd64 in the manifest list entries`
-- 对外发布镜像时应优先使用 `docker buildx build --platform ... --push`
-
 ## 项目结构
 
 ```text
 .
 ├── bluelog/                 Flask 应用包
-│   ├── blueprints/          博客、认证、后台蓝图
-│   ├── static/              CSS、JS、CKEditor、图片等静态资源
+│   ├── blueprints/          博客、认证、后台、API 蓝图
+│   ├── static/              CSS、JS、图片等静态资源
 │   ├── templates/           前台、后台、错误页模板
 │   ├── __init__.py          应用工厂、命令注册、日志配置
 │   ├── extensions.py        Flask 扩展初始化
@@ -189,14 +187,10 @@ docker run -d \
 │   ├── models.py            SQLAlchemy 模型
 │   ├── settings.py          开发/测试/生产配置
 │   └── utils.py             辅助函数
-├── data/                    Docker 持久化数据库目录
-├── docker/                  容器启动脚本
-├── logs/                    应用日志目录
 ├── migrations/              Alembic 迁移文件
+├── skills/                  本地 Codex 技能
+├── tests/                   unittest 测试
 ├── uploads/                 上传文件目录
-├── docker-compose.yml       Docker Compose 配置
-├── Dockerfile               镜像定义
-├── requirements.txt         Python 依赖
 └── wsgi.py                  生产入口
 ```
 
