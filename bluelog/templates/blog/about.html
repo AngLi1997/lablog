@@ -8,7 +8,7 @@
     </div>
     <div class="row">
         <div class="col-sm-8">
-            <div class="markdown-body">{{ admin.about|markdown }}</div>
+            <div class="markdown-body toastui-viewer" data-markdown-content='{{ admin.about|tojson|safe }}'></div>
         </div>
         <div class="col-sm-4 sidebar">
             {% include "blog/_sidebar.html" %}

@@ -21,6 +21,9 @@
                   )
               ) }}"
               type="text/css">
+        <link rel="stylesheet"
+              href="https://cdn.jsdelivr.net/npm/toast-ui-editor-all@latest/toastui-editor.css"
+              type="text/css">
     {% endblock head %}
 </head>
 <body class="theme-{{ request.cookies.get('theme', 'perfect_blue') }}">
@@ -114,6 +117,8 @@
     <script type="text/javascript" src="{{ url_for('static', filename='js/popper.min.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='js/highlight.min.js') }}"></script>
+    <script type="text/javascript"
+            src="https://cdn.jsdelivr.net/npm/toast-ui-editor-all@latest/toastui-editor-all.min.js"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='js/script.js') }}"></script>
     {{ moment.include_moment(local_js=url_for('static', filename='js/moment-with-locales.min.js')) }}
 {% endblock %}

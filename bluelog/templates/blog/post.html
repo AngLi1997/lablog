@@ -27,7 +27,7 @@
     </div>
     <div class="row">
         <div class="col-sm-8">
-            <div class="markdown-body">{{ post.body|markdown }}</div>
+            <div class="markdown-body toastui-viewer" data-markdown-content='{{ post.body|tojson|safe }}'></div>
             <hr>
             <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target=".postLinkModal">Share
             </button>

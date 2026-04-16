@@ -78,40 +78,41 @@ footer {
     margin-bottom: 1rem;
 }
 
-.markdown-toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 10px;
-}
-
-.markdown-toolbar-btn {
-    min-width: 56px;
-}
-
-.markdown-preview-toggle {
-    min-width: 56px;
-}
-
 .markdown-textarea {
-    min-height: 320px;
-    font-family: Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-}
-
-.markdown-preview {
-    min-height: 320px;
-    padding: 12px 14px;
-    overflow: auto;
-    background: #fff;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
+    display: none;
 }
 
 .markdown-help {
     margin-top: 8px;
 }
 
-.markdown-body pre {
+.toastui-editor-host {
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.toastui-editor-defaultUI {
+    border: 0 !important;
+}
+
+.toastui-editor-contents,
+.toastui-editor-contents p,
+.toastui-editor-contents li {
+    font-size: 1rem;
+    line-height: 1.7;
+}
+
+.toastui-editor-contents img {
+    max-width: 100%;
+}
+
+.toastui-editor-popup {
+    z-index: 1080;
+}
+
+.markdown-body pre,
+.toastui-editor-contents pre {
     margin: 0;
     padding: 12px 12px 14px;
     overflow-x: auto;
@@ -124,19 +125,22 @@ footer {
     scrollbar-color: var(--markdown-scrollbar-thumb-end) var(--markdown-code-bg);
 }
 
-.markdown-body code {
+.markdown-body code,
+.toastui-editor-contents code {
     padding: 0.15em 0.35em;
     background: var(--markdown-code-bg);
     border-radius: 3px;
 }
 
-.markdown-body pre code {
+.markdown-body pre code,
+.toastui-editor-contents pre code {
     padding: 0;
     background: transparent;
     color: inherit;
 }
 
-.markdown-body blockquote {
+.markdown-body blockquote,
+.toastui-editor-contents blockquote {
     margin: 1rem 0;
     padding-left: 1rem;
     color: #6a737d;
@@ -144,7 +148,9 @@ footer {
 }
 
 .markdown-body ul,
-.markdown-body ol {
+.markdown-body ol,
+.toastui-editor-contents ul,
+.toastui-editor-contents ol {
     padding-left: 1.5rem;
 }
 
