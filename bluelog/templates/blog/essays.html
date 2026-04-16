@@ -9,7 +9,6 @@
 {% block content %}
     <div class="page-header">
         <h1>随笔</h1>
-        <p class="text-muted mb-0">随笔时间轴</p>
     </div>
     <div class="row">
         <div class="col-sm-8">
@@ -19,8 +18,7 @@
                         {% set image_count = essay.images|length %}
                         <article class="essay-card essay-card--images-{{ image_count }}" id="essay-{{ essay.id }}">
                             <div class="essay-card__time">
-                                <span class="essay-card__date">{{ moment(essay.timestamp).format('LL') }}</span>
-                                <span class="essay-card__clock">{{ moment(essay.timestamp).format('LT') }}</span>
+                                <span class="essay-card__datetime">{{ moment(essay.timestamp).format('LL') }} {{ moment(essay.timestamp).format('LT') }}</span>
                             </div>
                             <div class="essay-card__content">
                                 {% if essay.body %}
