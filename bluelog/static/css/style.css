@@ -3,8 +3,27 @@ nav {
 }
 
 body {
+    --markdown-body-text: #24292f;
+    --markdown-body-muted: #586069;
+    --markdown-body-link: #2780e3;
+    --markdown-body-link-hover: #1f6fcc;
+    --markdown-body-rule: rgba(39, 128, 227, 0.22);
+    --theme-switch-bg: #ffffff;
+    --theme-switch-text: #212529;
+    --theme-switch-border: rgba(39, 128, 227, 0.22);
+    --theme-switch-hover-bg: #edf4ff;
+    --markdown-table-head-bg: #2780e3;
+    --markdown-table-head-text: #ffffff;
+    --markdown-table-border: rgba(39, 128, 227, 0.18);
+    --markdown-table-row-alt: rgba(39, 128, 227, 0.04);
     --markdown-code-bg: #f6f8fa;
     --markdown-code-text: #24292f;
+    --markdown-code-muted: #6a737d;
+    --markdown-code-keyword: #cf222e;
+    --markdown-code-string: #0a3069;
+    --markdown-code-function: #8250df;
+    --markdown-code-number: #0550ae;
+    --markdown-code-comment: #6e7781;
     --markdown-copy-text: #57606a;
     --markdown-copy-hover-text: #24292f;
     --markdown-copy-success-text: #1a7f37;
@@ -15,8 +34,27 @@ body {
 }
 
 body.theme-black_swan {
+    --markdown-body-text: #d8dee9;
+    --markdown-body-muted: #9aa4b2;
+    --markdown-body-link: #6fb5ff;
+    --markdown-body-link-hover: #9ed0ff;
+    --markdown-body-rule: rgba(111, 181, 255, 0.22);
+    --theme-switch-bg: #2c3e50;
+    --theme-switch-text: #ecf3fb;
+    --theme-switch-border: rgba(111, 181, 255, 0.24);
+    --theme-switch-hover-bg: #375a7f;
+    --markdown-table-head-bg: #375a7f;
+    --markdown-table-head-text: #f8fbff;
+    --markdown-table-border: rgba(111, 168, 220, 0.2);
+    --markdown-table-row-alt: rgba(55, 90, 127, 0.22);
     --markdown-code-bg: #303030;
     --markdown-code-text: #f5f5f5;
+    --markdown-code-muted: #8b949e;
+    --markdown-code-keyword: #ff7b72;
+    --markdown-code-string: #a5d6ff;
+    --markdown-code-function: #d2a8ff;
+    --markdown-code-number: #79c0ff;
+    --markdown-code-comment: #8b949e;
     --markdown-copy-text: #b5b5b5;
     --markdown-copy-hover-text: #ffffff;
     --markdown-copy-success-text: #00bc8c;
@@ -103,6 +141,61 @@ footer {
     line-height: 1.7;
 }
 
+.markdown-body,
+.toastui-editor-contents,
+.markdown-body p,
+.toastui-editor-contents p,
+.markdown-body li,
+.toastui-editor-contents li,
+.markdown-body blockquote,
+.toastui-editor-contents blockquote,
+.markdown-body td,
+.toastui-editor-contents td {
+    color: var(--markdown-body-text) !important;
+}
+
+.markdown-body strong,
+.toastui-editor-contents strong,
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6,
+.toastui-editor-contents h1,
+.toastui-editor-contents h2,
+.toastui-editor-contents h3,
+.toastui-editor-contents h4,
+.toastui-editor-contents h5,
+.toastui-editor-contents h6 {
+    color: var(--markdown-body-text) !important;
+}
+
+.markdown-body a,
+.toastui-editor-contents a {
+    color: var(--markdown-body-link) !important;
+}
+
+.markdown-body a:hover,
+.toastui-editor-contents a:hover,
+.markdown-body a:focus,
+.toastui-editor-contents a:focus {
+    color: var(--markdown-body-link-hover) !important;
+}
+
+.markdown-body hr,
+.toastui-editor-contents hr {
+    border: 0;
+    border-top: 1px solid var(--markdown-body-rule) !important;
+}
+
+.markdown-body ul li::marker,
+.markdown-body ol li::marker,
+.toastui-editor-contents ul li::marker,
+.toastui-editor-contents ol li::marker {
+    color: var(--markdown-body-muted);
+}
+
 .toastui-editor-contents img {
     max-width: 100%;
 }
@@ -111,15 +204,59 @@ footer {
     z-index: 1080;
 }
 
+.markdown-body table,
+.toastui-editor-contents table {
+    width: 100%;
+    margin: 1.25rem 0;
+    overflow: hidden;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1px solid var(--markdown-table-border) !important;
+    border-radius: 8px;
+}
+
+.markdown-body thead th,
+.toastui-editor-contents thead th {
+    color: var(--markdown-table-head-text) !important;
+    background: var(--markdown-table-head-bg) !important;
+    border-color: var(--markdown-table-head-bg) !important;
+}
+
+.markdown-body th,
+.markdown-body td,
+.toastui-editor-contents th,
+.toastui-editor-contents td {
+    padding: 0.75rem 0.9rem;
+    border-right: 1px solid var(--markdown-table-border) !important;
+    border-bottom: 1px solid var(--markdown-table-border) !important;
+}
+
+.markdown-body tbody tr:nth-child(even) td,
+.toastui-editor-contents tbody tr:nth-child(even) td {
+    background: var(--markdown-table-row-alt) !important;
+}
+
+.markdown-body tr:last-child td,
+.toastui-editor-contents tr:last-child td {
+    border-bottom: 0;
+}
+
+.markdown-body th:last-child,
+.markdown-body td:last-child,
+.toastui-editor-contents th:last-child,
+.toastui-editor-contents td:last-child {
+    border-right: 0;
+}
+
 .markdown-body pre,
 .toastui-editor-contents pre {
     margin: 0;
     padding: 12px 12px 14px;
     overflow-x: auto;
     overflow-y: hidden;
-    color: var(--markdown-code-text);
-    background: var(--markdown-code-bg);
-    border: 0;
+    color: var(--markdown-code-text) !important;
+    background: var(--markdown-code-bg) !important;
+    border: 0 !important;
     border-radius: 0;
     scrollbar-width: thin;
     scrollbar-color: var(--markdown-scrollbar-thumb-end) var(--markdown-code-bg);
@@ -135,16 +272,17 @@ footer {
 .markdown-body pre code,
 .toastui-editor-contents pre code {
     padding: 0;
-    background: transparent;
-    color: inherit;
+    background: transparent !important;
+    color: inherit !important;
+    text-shadow: none;
 }
 
 .markdown-body blockquote,
 .toastui-editor-contents blockquote {
     margin: 1rem 0;
     padding-left: 1rem;
-    color: #6a737d;
-    border-left: 4px solid #dfe2e5;
+    color: var(--markdown-body-muted) !important;
+    border-left: 4px solid var(--markdown-body-rule);
 }
 
 .markdown-body ul,
@@ -218,4 +356,134 @@ footer {
 
 .markdown-code-block pre::-webkit-scrollbar-corner {
     background: transparent;
+}
+
+.markdown-body pre code[class*="language-"],
+.markdown-body pre code[class^="language-"],
+.toastui-editor-contents pre code[class*="language-"],
+.toastui-editor-contents pre code[class^="language-"],
+.markdown-body pre[class*="language-"],
+.markdown-body pre[class^="language-"],
+.toastui-editor-contents pre[class*="language-"],
+.toastui-editor-contents pre[class^="language-"] {
+    color: var(--markdown-code-text) !important;
+    background: transparent !important;
+    text-shadow: none !important;
+}
+
+.markdown-body .token.comment,
+.markdown-body .token.prolog,
+.markdown-body .token.doctype,
+.markdown-body .token.cdata,
+.toastui-editor-contents .token.comment,
+.toastui-editor-contents .token.prolog,
+.toastui-editor-contents .token.doctype,
+.toastui-editor-contents .token.cdata {
+    color: var(--markdown-code-comment) !important;
+}
+
+.markdown-body .token.punctuation,
+.toastui-editor-contents .token.punctuation {
+    color: var(--markdown-code-muted) !important;
+}
+
+.markdown-body .token.property,
+.markdown-body .token.tag,
+.markdown-body .token.boolean,
+.markdown-body .token.number,
+.markdown-body .token.constant,
+.markdown-body .token.symbol,
+.markdown-body .token.deleted,
+.toastui-editor-contents .token.property,
+.toastui-editor-contents .token.tag,
+.toastui-editor-contents .token.boolean,
+.toastui-editor-contents .token.number,
+.toastui-editor-contents .token.constant,
+.toastui-editor-contents .token.symbol,
+.toastui-editor-contents .token.deleted {
+    color: var(--markdown-code-number) !important;
+}
+
+.markdown-body .token.selector,
+.markdown-body .token.attr-name,
+.markdown-body .token.string,
+.markdown-body .token.char,
+.markdown-body .token.builtin,
+.markdown-body .token.inserted,
+.toastui-editor-contents .token.selector,
+.toastui-editor-contents .token.attr-name,
+.toastui-editor-contents .token.string,
+.toastui-editor-contents .token.char,
+.toastui-editor-contents .token.builtin,
+.toastui-editor-contents .token.inserted {
+    color: var(--markdown-code-string) !important;
+}
+
+.markdown-body .token.operator,
+.markdown-body .token.entity,
+.markdown-body .token.url,
+.markdown-body .language-css .token.string,
+.markdown-body .style .token.string,
+.toastui-editor-contents .token.operator,
+.toastui-editor-contents .token.entity,
+.toastui-editor-contents .token.url,
+.toastui-editor-contents .language-css .token.string,
+.toastui-editor-contents .style .token.string {
+    color: var(--markdown-code-text) !important;
+}
+
+.markdown-body .token.atrule,
+.markdown-body .token.attr-value,
+.markdown-body .token.keyword,
+.toastui-editor-contents .token.atrule,
+.toastui-editor-contents .token.attr-value,
+.toastui-editor-contents .token.keyword {
+    color: var(--markdown-code-keyword) !important;
+}
+
+.markdown-body .token.function,
+.markdown-body .token.class-name,
+.toastui-editor-contents .token.function,
+.toastui-editor-contents .token.class-name {
+    color: var(--markdown-code-function) !important;
+}
+
+body.theme-black_swan .markdown-body .markdown-code-block,
+body.theme-black_swan .toastui-editor-contents .markdown-code-block,
+body.theme-black_swan .markdown-body pre[class*="language-"],
+body.theme-black_swan .markdown-body pre[class^="language-"],
+body.theme-black_swan .toastui-editor-contents pre[class*="language-"],
+body.theme-black_swan .toastui-editor-contents pre[class^="language-"] {
+    background: var(--markdown-code-bg) !important;
+}
+
+.dropdown > .btn.btn-default {
+    color: var(--theme-switch-text);
+    background: var(--theme-switch-bg);
+    border: 1px solid var(--theme-switch-border);
+    border-radius: 6px;
+    box-shadow: none;
+}
+
+.dropdown > .btn.btn-default:hover,
+.dropdown > .btn.btn-default:focus,
+.dropdown > .btn.btn-default:active {
+    color: var(--theme-switch-text);
+    background: var(--theme-switch-hover-bg);
+    border-color: var(--theme-switch-border);
+}
+
+body.theme-black_swan .dropdown-menu {
+    background: #253341;
+    border: 1px solid rgba(111, 181, 255, 0.16);
+}
+
+body.theme-black_swan .dropdown-item {
+    color: #d8dee9;
+}
+
+body.theme-black_swan .dropdown-item:hover,
+body.theme-black_swan .dropdown-item:focus {
+    color: #ffffff;
+    background: #375a7f;
 }

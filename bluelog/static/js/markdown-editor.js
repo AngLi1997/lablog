@@ -28,6 +28,18 @@
         textarea.value = editor.getMarkdown();
     }
 
+    function getEditorPlugins() {
+        if (!window.toastui || !window.toastui.Editor || !window.toastui.Editor.plugin) {
+            return [];
+        }
+
+        if (!window.toastui.Editor.plugin.codeSyntaxHighlight) {
+            return [];
+        }
+
+        return [window.toastui.Editor.plugin.codeSyntaxHighlight];
+    }
+
     function buildEditor(textarea) {
         if (!window.toastui || !window.toastui.Editor) {
             return;
@@ -60,6 +72,7 @@
             previewStyle: 'vertical',
             height: editorHeight,
             usageStatistics: false,
+            plugins: getEditorPlugins(),
             hooks: {
                 addImageBlobHook: function (blob, callback) {
                     help.textContent = '正在上传图片...';

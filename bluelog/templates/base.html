@@ -10,20 +10,20 @@
         <link rel="stylesheet"
               href="{{ url_for('static', filename='css/%s.min.css' % request.cookies.get('theme', 'perfect_blue')) }}"
               type="text/css">
-        <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" type="text/css">
         <link rel="stylesheet"
-              href="{{ url_for(
-                  'static',
-                  filename='css/%s' % (
-                      'highlight-github-dark.min.css'
-                      if request.cookies.get('theme', 'perfect_blue') == 'black_swan'
-                      else 'highlight-github.min.css'
-                  )
+              href="{{ (
+                  'https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism-okaidia.min.css'
+                  if request.cookies.get('theme', 'perfect_blue') == 'black_swan'
+                  else 'https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism.min.css'
               ) }}"
               type="text/css">
         <link rel="stylesheet"
               href="https://cdn.jsdelivr.net/npm/toast-ui-editor-all@latest/toastui-editor.css"
               type="text/css">
+        <link rel="stylesheet"
+              href="https://uicdn.toast.com/editor-plugin-code-syntax-highlight/latest/toastui-editor-plugin-code-syntax-highlight.min.css"
+              type="text/css">
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" type="text/css">
     {% endblock head %}
 </head>
 <body class="theme-{{ request.cookies.get('theme', 'perfect_blue') }}">
@@ -116,9 +116,10 @@
     <script type="text/javascript" src="{{ url_for('static', filename='js/jquery-3.2.1.slim.min.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='js/popper.min.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
-    <script type="text/javascript" src="{{ url_for('static', filename='js/highlight.min.js') }}"></script>
     <script type="text/javascript"
             src="https://cdn.jsdelivr.net/npm/toast-ui-editor-all@latest/toastui-editor-all.min.js"></script>
+    <script type="text/javascript"
+            src="https://uicdn.toast.com/editor-plugin-code-syntax-highlight/latest/toastui-editor-plugin-code-syntax-highlight-all.min.js"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='js/script.js') }}"></script>
     {{ moment.include_moment(local_js=url_for('static', filename='js/moment-with-locales.min.js')) }}
 {% endblock %}

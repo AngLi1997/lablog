@@ -28,7 +28,6 @@ $(function () {
         root.querySelectorAll('.markdown-body pre, .toastui-editor-contents pre').forEach(function (pre) {
             var wrapper;
             var copyButton;
-            var code = pre.querySelector('code');
 
             if (!(pre.parentNode && pre.parentNode.classList.contains('markdown-code-block'))) {
                 wrapper = document.createElement('div');
@@ -45,11 +44,19 @@ $(function () {
                 wrapper.appendChild(copyButton);
                 wrapper.appendChild(pre);
             }
-
-            if (code && window.hljs && code.dataset.highlighted !== 'yes') {
-                window.hljs.highlightElement(code);
-            }
         });
+    }
+
+    function getViewerPlugins() {
+        if (!window.toastui || !window.toastui.Editor || !window.toastui.Editor.plugin) {
+            return [];
+        }
+
+        if (!window.toastui.Editor.plugin.codeSyntaxHighlight) {
+            return [];
+        }
+
+        return [window.toastui.Editor.plugin.codeSyntaxHighlight];
     }
 
     function initToastuiViewers() {
@@ -77,7 +84,8 @@ $(function () {
             window.toastui.Editor.factory({
                 el: element,
                 viewer: true,
-                initialValue: initialValue
+                initialValue: initialValue,
+                plugins: getViewerPlugins()
             });
             element.dataset.viewerReady = 'true';
             enhanceCodeBlocks(element);
